@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="banner-conectalar.png" width="100%" alt="Banner ConectaLar">
+</p>
+
+
 # 🏢 ConectaLar
 
 ### Sistema de Gestão e Comunicação para Condomínios
