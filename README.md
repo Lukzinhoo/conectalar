@@ -1,61 +1,70 @@
-# 🏢 Conectalar
+# 🏢 ConectaLar
 
-O **Conectalar** é uma plataforma de gestão condominial desenvolvida para facilitar a comunicação entre moradores e administração, centralizando serviços importantes do condomínio em um único sistema.
+### Sistema de Gestão e Comunicação para Condomínios
 
-O projeto possui uma área para **moradores** e um **painel administrativo**, com recursos para reservas, comunicados, ocorrências, chats, regras, horários, notificações e gestão de moradores.
+O **ConectaLar** é uma plataforma desenvolvida para facilitar a administração de condomínios e melhorar a comunicação entre moradores, síndicos e administradores.
+
+O sistema possui uma aplicação responsiva para moradores e administradores, permitindo centralizar reservas, comunicados, ocorrências, conversas, notificações e informações administrativas em um único ambiente.
 
 ---
 
 ## 🚀 Funcionalidades
 
+### 👨‍💼 Área Administrativa
+
+- 📊 Dashboard administrativo
+- 👥 Cadastro e gerenciamento de moradores
+- 🏠 Gerenciamento de residências
+- 📅 Gerenciamento de reservas
+- 📢 Publicação de comunicados
+- 🚨 Gerenciamento de ocorrências
+- 💬 Chat privado com moradores
+- 🌐 Chat geral do condomínio
+- 📖 Gerenciamento das regras do condomínio
+- 🕐 Gerenciamento de horários de serviços
+- 🔔 Sistema de notificações
+- 💰 Controle financeiro
+
+---
+
 ### 👤 Área do Morador
 
-- 🔐 Login de morador
-- 🏠 Página inicial personalizada
-- 📅 Reservas de espaços do condomínio
+- 🏠 Página inicial
+- 📅 Solicitação e acompanhamento de reservas
 - 📢 Visualização de comunicados
 - 🚨 Registro e acompanhamento de ocorrências
 - 💬 Chat com a administração
-- 👥 Chat geral
-- 📖 Regras do condomínio
-- 🕐 Horários de serviços
+- 🌐 Chat geral
+- 📖 Consulta das regras do condomínio
+- 🕐 Consulta dos horários de serviços
 - 🔔 Notificações
 - 👤 Perfil do morador
-
-### 👨‍💼 Painel Administrativo
-
-- 📊 Dashboard administrativo
-- 👥 Gerenciamento de moradores
-- ➕ Cadastro de novos moradores
-- ✏️ Edição de moradores
-- 🗑️ Exclusão de moradores
-- 📅 Gerenciamento de reservas
-- 📢 Gerenciamento de comunicados
-- 🚨 Gerenciamento de ocorrências
-- 💬 Chat com moradores
-- 👥 Chat geral
-- 📖 Gerenciamento de regras
-- 🕐 Gerenciamento de horários
-- 🔔 Notificações
-- 💰 Área financeira
 
 ---
 
 ## 📅 Sistema de Reservas
 
-O sistema permite administrar espaços compartilhados do condomínio.
+O sistema permite que moradores solicitem reservas de espaços do condomínio.
 
-A administração pode:
+A administração pode acompanhar e gerenciar as solicitações realizadas.
 
-- Criar espaços para reserva
-- Definir capacidade
-- Definir horários disponíveis
-- Visualizar solicitações
-- Aprovar reservas
-- Recusar reservas
-- Cancelar ou excluir reservas
+Também existe controle para evitar reservas conflitantes do mesmo espaço na mesma data.
 
-O morador pode consultar os espaços e solicitar uma reserva para uma data disponível.
+---
+
+## 💬 Sistema de Chat
+
+O ConectaLar possui dois tipos de comunicação:
+
+### Chat Privado
+
+Permite a comunicação direta entre:
+
+**Morador ↔ Administração**
+
+### Chat Geral
+
+Canal destinado à comunicação coletiva entre os participantes do condomínio.
 
 ---
 
@@ -63,249 +72,167 @@ O morador pode consultar os espaços e solicitar uma reserva para uma data dispo
 
 Os moradores podem registrar ocorrências diretamente pelo sistema.
 
-A administração consegue visualizar e acompanhar as solicitações, permitindo centralizar a comunicação e facilitar o gerenciamento dos problemas do condomínio.
+A administração consegue visualizar e acompanhar as solicitações enviadas.
 
 ---
 
-## 💬 Comunicação
+## 📢 Comunicados
 
-O Conectalar possui diferentes formas de comunicação entre moradores e administração.
+A administração pode publicar informações importantes para os moradores através da área de comunicados.
 
-### Chat privado
-
-Permite comunicação direta entre o morador e a administração.
-
-### Chat geral
-
-Espaço de comunicação coletiva disponível dentro da plataforma.
-
-### Comunicados
-
-A administração pode publicar informações importantes para os moradores, utilizando categorias e níveis de prioridade.
+Isso permite centralizar avisos do condomínio dentro da própria plataforma.
 
 ---
 
 ## 🔔 Notificações
 
-O sistema possui uma área de notificações para manter os usuários informados sobre atividades importantes da plataforma.
+O sistema possui notificações integradas para informar os usuários sobre eventos importantes.
 
-Entre elas estão informações relacionadas a:
+Entre elas:
 
-- Reservas
+- Novas reservas
 - Comunicados
 - Ocorrências
 - Mensagens
-- Atualizações do sistema
+- Informações do sistema
 
 ---
 
 ## 💰 Financeiro
 
-O painel administrativo possui uma área destinada ao gerenciamento financeiro do condomínio.
-
-Ela permite trabalhar com informações como:
+A área administrativa possui controle financeiro para organização de:
 
 - Receitas
 - Despesas
 - Categorias
 - Valores
-- Datas de vencimento
-- Datas de pagamento
-- Status de pagamento
+- Vencimentos
+- Pagamentos
+- Status
 - Observações
 
 ---
 
-## 🛠️ Tecnologias utilizadas
+## 🛠️ Tecnologias Utilizadas
 
-O projeto utiliza tecnologias modernas para desenvolvimento web e mobile:
-
-- **React Native**
-- **Expo**
-- **TypeScript**
-- **React Navigation**
-- **Supabase**
-- **PostgreSQL**
-- **Supabase Authentication**
-- **Supabase Edge Functions**
-- **Vercel**
-- **Git / GitHub**
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 
 ---
 
-## 🗄️ Backend
-
-O backend do projeto utiliza o **Supabase**, responsável por recursos como:
-
-- Banco de dados PostgreSQL
-- Autenticação
-- Perfis de usuários
-- Políticas de segurança RLS
-- Edge Functions
-- Reservas
-- Comunicados
-- Ocorrências
-- Chats
-- Regras
-- Horários
-- Notificações
-- Dados financeiros
-
----
-
-## 🔐 Tipos de usuário
-
-O sistema possui diferentes níveis de acesso:
+## 🧱 Arquitetura do Projeto
 
 ```text
-morador
-sindico
-subsindico
-admin
+conectalar
+│
+├── src
+│   ├── components
+│   ├── navigation
+│   ├── screens
+│   │   ├── admin
+│   │   ├── auth
+│   │   ├── morador
+│   │   └── web
+│   │       ├── adm
+│   │       └── morador
+│   │
+│   ├── services
+│   └── theme
+│
+├── supabase
+│   └── functions
+│
+└── assets
 ```
-
-As funcionalidades apresentadas são controladas de acordo com o tipo de usuário autenticado.
 
 ---
 
-## 📂 Estrutura do projeto
+## 🗄️ Backend e Banco de Dados
+
+O backend do projeto utiliza **Supabase**.
+
+Ele é responsável por recursos como:
+
+- 🔐 Autenticação
+- 👥 Perfis de usuários
+- 📅 Reservas
+- 💬 Mensagens
+- 📢 Comunicados
+- 🚨 Ocorrências
+- 🔔 Notificações
+- 💰 Dados financeiros
+- ⚡ Edge Functions
+
+---
+
+## 🔐 Tipos de Usuário
+
+O sistema trabalha com diferentes níveis de acesso:
 
 ```text
-conectalar/
-│
-├── assets/
-├── src/
-│   ├── components/
-│   ├── navigation/
-│   ├── screens/
-│   │   ├── admin/
-│   │   ├── auth/
-│   │   ├── morador/
-│   │   └── web/
-│   │       ├── adm/
-│   │       └── morador/
-│   ├── services/
-│   └── theme/
-│
-├── supabase/
-│   └── functions/
-│
-├── App.tsx
-├── package.json
-└── vercel.json
+Morador
+Síndico
+Subsíndico
+Administrador
 ```
+
+Cada perfil possui acesso às funcionalidades correspondentes à sua função.
 
 ---
 
-## 💻 Executando o projeto
+## 📱 Responsividade
 
-Clone o repositório:
+A interface web foi desenvolvida para funcionar em diferentes tamanhos de tela.
 
-```bash
-git clone https://github.com/Lukzinhoo/conectalar.git
-```
-
-Entre na pasta:
-
-```bash
-cd conectalar
-```
-
-Instale as dependências:
-
-```bash
-npm install
-```
-
-Crie o arquivo `.env.local` e configure as variáveis públicas necessárias para conexão com o Supabase:
-
-```env
-EXPO_PUBLIC_SUPABASE_URL=SEU_SUPABASE_URL
-EXPO_PUBLIC_SUPABASE_ANON_KEY=SUA_SUPABASE_ANON_KEY
-```
-
-> Nunca envie chaves administrativas ou `SUPABASE_SERVICE_ROLE_KEY` para o repositório.
-
----
-
-## 🌐 Executando a versão Web
-
-```bash
-npx expo start --web
-```
-
----
-
-## 📱 Executando com Expo Go
-
-```bash
-npx expo start --go
-```
-
-Depois, utilize o aplicativo **Expo Go** para ler o QR Code exibido no terminal ou navegador.
-
----
-
-## 🏗️ Gerando a versão Web
-
-```bash
-npx expo export -p web
-```
-
-O projeto exportado será gerado na pasta:
+O sistema possui adaptação para:
 
 ```text
-dist/
+💻 Desktop
+📱 Smartphone
+📲 Tablet
 ```
 
 ---
 
-## ☁️ Deploy
+## 🌐 Projeto Online
 
-A versão web pode ser publicada utilizando a **Vercel**.
+O ConectaLar está publicado na Vercel:
 
-Para realizar um deploy de produção através da CLI:
-
-```bash
-vercel --prod
-```
-
-As variáveis de ambiente do Supabase também devem ser configuradas no ambiente de deploy.
+https://conectalar-one.vercel.app
 
 ---
 
-## 🔒 Segurança
+## 📌 Status do Projeto
 
-O projeto utiliza recursos de segurança do Supabase, incluindo:
+🚧 **Em desenvolvimento**
 
-- Autenticação de usuários
-- Row Level Security (RLS)
-- Controle de acesso por tipo de usuário
-- Políticas de acesso ao banco de dados
-- Variáveis de ambiente
-
-Arquivos contendo credenciais privadas não devem ser enviados ao GitHub.
+O projeto continua recebendo melhorias, novas funcionalidades e ajustes de interface.
 
 ---
 
 ## 🎯 Objetivo
 
-O objetivo do **Conectalar** é tornar a administração condominial mais organizada e acessível, oferecendo uma plataforma centralizada para moradores e administradores.
+O objetivo do ConectaLar é criar uma solução centralizada para gestão de condomínios, reduzindo processos manuais e facilitando a comunicação entre moradores e administração.
 
-A proposta é reduzir processos manuais e melhorar a comunicação, permitindo que atividades comuns do condomínio sejam realizadas de maneira digital.
-
----
-
-## 👨‍💻 Autor
-
-Desenvolvido por **Lukzinhoo**.
-
-GitHub: `@Lukzinhoo`
+Além disso, o projeto faz parte do meu desenvolvimento profissional e da aplicação prática dos conhecimentos adquiridos durante minha formação em Ciência da Computação.
 
 ---
 
-## 📌 Status do projeto
+## 👨‍💻 Desenvolvedor
 
-🚧 **Em desenvolvimento**
+**Luiz Neto**
 
-Novas funcionalidades e melhorias continuam sendo implementadas.
+🎓 Ciência da Computação  
+💻 Desenvolvimento de Software
+
+GitHub:  
+https://github.com/Lukzinhoo
+
+---
+
+⭐ Se você gostou do projeto, considere deixar uma estrela no repositório.
