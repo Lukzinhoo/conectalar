@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -37,11 +38,10 @@ import {
   sair,
 } from '../../services/authService';
 
-type NavigationProp =
-  NativeStackNavigationProp<
-    AuthStackParamList,
-    'MoradorHome'
-  >;
+type NavigationProp = NativeStackNavigationProp<
+  AuthStackParamList,
+  'MoradorHome'
+>;
 
 type MenuCardProps = {
   titulo: string;
@@ -94,16 +94,13 @@ function MenuCard({
 export default function MoradorHomeScreen() {
   const insets = useSafeAreaInsets();
 
-  const navigation =
-    useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
 
   const [perfil, setPerfil] =
     useState<PerfilUsuario | null>(null);
 
-  const [
-    carregandoPerfil,
-    setCarregandoPerfil,
-  ] = useState(true);
+  const [carregandoPerfil, setCarregandoPerfil] =
+    useState(true);
 
   const [saindo, setSaindo] =
     useState(false);
@@ -116,8 +113,7 @@ export default function MoradorHomeScreen() {
     try {
       setCarregandoPerfil(true);
 
-      const perfilAtual =
-        await obterPerfilAtual();
+      const perfilAtual = await obterPerfilAtual();
 
       if (!perfilAtual) {
         navigation.reset({
@@ -203,9 +199,7 @@ export default function MoradorHomeScreen() {
     }
   }
 
-  function recursoEmBreve(
-    recurso: string
-  ) {
+  function recursoEmBreve(recurso: string) {
     Alert.alert(
       recurso,
       'Essa funcionalidade será adicionada na próxima etapa.'
@@ -220,10 +214,7 @@ export default function MoradorHomeScreen() {
           styles.scrollContent,
           {
             paddingBottom:
-              Math.max(
-                insets.bottom,
-                20
-              ) + 24,
+              Math.max(insets.bottom, 20) + 24,
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -236,10 +227,7 @@ export default function MoradorHomeScreen() {
             styles.header,
             {
               paddingTop:
-                Math.max(
-                  insets.top,
-                  24
-                ) + 10,
+                Math.max(insets.top, 24) + 10,
             },
           ]}
         >
@@ -261,13 +249,10 @@ export default function MoradorHomeScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.notificationButton,
-                pressed &&
-                  styles.headerPressed,
+                pressed && styles.headerPressed,
               ]}
               onPress={() =>
-                recursoEmBreve(
-                  'Notificações'
-                )
+                recursoEmBreve('Notificações')
               }
             >
               <Bell
@@ -276,9 +261,7 @@ export default function MoradorHomeScreen() {
               />
 
               <View
-                style={
-                  styles.notificationDot
-                }
+                style={styles.notificationDot}
               />
             </Pressable>
           </View>
@@ -295,18 +278,14 @@ export default function MoradorHomeScreen() {
               >
                 {carregandoPerfil
                   ? 'Carregando...'
-                  : perfil?.nome ||
-                    'Morador'}
+                  : perfil?.nome || 'Morador'}
               </Text>
 
               <Text
-                style={
-                  styles.headerDescription
-                }
+                style={styles.headerDescription}
               >
-                Acompanhe tudo sobre o
-                seu condomínio em um só
-                lugar.
+                Acompanhe tudo sobre o seu
+                condomínio em um só lugar.
               </Text>
             </View>
 
@@ -325,8 +304,7 @@ export default function MoradorHomeScreen() {
             </View>
           </View>
 
-          {!carregandoPerfil &&
-          perfil ? (
+          {!carregandoPerfil && perfil ? (
             <View style={styles.roleBadge}>
               <UserRound
                 size={13}
@@ -360,13 +338,8 @@ export default function MoradorHomeScreen() {
                 Bem-vindo ao ConectaLar
               </Text>
 
-              <Text
-                style={
-                  styles.accessDescription
-                }
-              >
-                Serviços e informações do
-                seu condomínio.
+              <Text style={styles.accessDescription}>
+                Serviços e informações do seu condomínio.
               </Text>
             </View>
 
@@ -383,11 +356,8 @@ export default function MoradorHomeScreen() {
               Meu Condomínio
             </Text>
 
-            <Text
-              style={styles.sectionSubtitle}
-            >
-              Acesse as principais
-              funcionalidades.
+            <Text style={styles.sectionSubtitle}>
+              Acesse as principais funcionalidades.
             </Text>
           </View>
 
@@ -396,9 +366,7 @@ export default function MoradorHomeScreen() {
               titulo="Reservas"
               descricao="Churrasqueira e salão"
               onPress={() =>
-                recursoEmBreve(
-                  'Reservas'
-                )
+                recursoEmBreve('Reservas')
               }
               icone={
                 <CalendarDays
@@ -412,9 +380,7 @@ export default function MoradorHomeScreen() {
               titulo="Comunicados"
               descricao="Avisos do condomínio"
               onPress={() =>
-                recursoEmBreve(
-                  'Comunicados'
-                )
+                recursoEmBreve('Comunicados')
               }
               icone={
                 <Megaphone
@@ -428,9 +394,7 @@ export default function MoradorHomeScreen() {
               titulo="Ocorrências"
               descricao="Reclamações e solicitações"
               onPress={() =>
-                recursoEmBreve(
-                  'Ocorrências'
-                )
+                recursoEmBreve('Ocorrências')
               }
               icone={
                 <TriangleAlert
@@ -440,13 +404,13 @@ export default function MoradorHomeScreen() {
               }
             />
 
+            {/* CHAT - ROTA MOBILE AINDA NÃO CADASTRADA */}
+
             <MenuCard
               titulo="Chat"
               descricao="Fale com a administração"
               onPress={() =>
-                navigation.navigate(
-                  'ChatMorador'
-                )
+                recursoEmBreve('Chat')
               }
               icone={
                 <MessageCircle
@@ -456,14 +420,13 @@ export default function MoradorHomeScreen() {
               }
             />
 
-            {/* CHAT GERAL */}
+            {/* CHAT GERAL - ROTA MOBILE AINDA NÃO CADASTRADA */}
+
             <MenuCard
               titulo="Chat Geral"
               descricao="Converse com todos do condomínio"
               onPress={() =>
-                navigation.navigate(
-                  'ChatGeralMorador'
-                )
+                recursoEmBreve('Chat Geral')
               }
               icone={
                 <MessageCircle
@@ -473,14 +436,13 @@ export default function MoradorHomeScreen() {
               }
             />
 
-            {/* REGRAS - FUNCIONANDO */}
+            {/* REGRAS - ROTA MOBILE AINDA NÃO CADASTRADA */}
+
             <MenuCard
               titulo="Regras"
               descricao="Regras do condomínio"
               onPress={() =>
-                navigation.navigate(
-                  'RegrasMorador'
-                )
+                recursoEmBreve('Regras')
               }
               icone={
                 <FileText
@@ -494,9 +456,7 @@ export default function MoradorHomeScreen() {
               titulo="Horários"
               descricao="Serviços e funcionamento"
               onPress={() =>
-                recursoEmBreve(
-                  'Horários'
-                )
+                recursoEmBreve('Horários')
               }
               icone={
                 <Clock
@@ -510,9 +470,7 @@ export default function MoradorHomeScreen() {
               titulo="Notificações"
               descricao="Avisos e novidades"
               onPress={() =>
-                recursoEmBreve(
-                  'Notificações'
-                )
+                recursoEmBreve('Notificações')
               }
               icone={
                 <Bell
@@ -526,9 +484,7 @@ export default function MoradorHomeScreen() {
               titulo="Meu perfil"
               descricao="Dados da sua conta"
               onPress={() =>
-                recursoEmBreve(
-                  'Meu perfil'
-                )
+                recursoEmBreve('Meu perfil')
               }
               icone={
                 <Settings
@@ -550,13 +506,8 @@ export default function MoradorHomeScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.logoutButton,
-
-              pressed &&
-                !saindo &&
-                styles.logoutPressed,
-
-              saindo &&
-                styles.logoutDisabled,
+              pressed && !saindo && styles.logoutPressed,
+              saindo && styles.logoutDisabled,
             ]}
             onPress={confirmarSaida}
             disabled={saindo}
@@ -582,11 +533,7 @@ export default function MoradorHomeScreen() {
                   : 'Sair da conta'}
               </Text>
 
-              <Text
-                style={
-                  styles.logoutDescription
-                }
-              >
+              <Text style={styles.logoutDescription}>
                 Encerrar sua sessão
               </Text>
             </View>
@@ -607,8 +554,7 @@ export default function MoradorHomeScreen() {
             </Text>
 
             <Text style={styles.footerText}>
-              Seu condomínio mais
-              conectado.
+              Seu condomínio mais conectado.
             </Text>
           </View>
         </View>
@@ -636,7 +582,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryDark,
     paddingHorizontal: 20,
     paddingBottom: 26,
-
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
   },
@@ -656,9 +601,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 11,
-
     backgroundColor: colors.primary,
-
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -674,23 +617,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 13,
-
-    backgroundColor:
-      'rgba(255,255,255,0.10)',
-
+    backgroundColor: 'rgba(255,255,255,0.10)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   notificationDot: {
     position: 'absolute',
-
     width: 7,
     height: 7,
     borderRadius: 4,
-
     backgroundColor: '#EF4444',
-
     right: 8,
     top: 8,
   },
@@ -702,7 +639,6 @@ const styles = StyleSheet.create({
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-
     marginTop: 22,
   },
 
@@ -713,7 +649,6 @@ const styles = StyleSheet.create({
 
   welcomeLabel: {
     color: '#93C5FD',
-
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.4,
@@ -721,19 +656,15 @@ const styles = StyleSheet.create({
 
   userName: {
     color: '#FFFFFF',
-
     fontSize: 27,
     fontWeight: '800',
-
     marginTop: 4,
   },
 
   headerDescription: {
     color: '#CBD5E1',
-
     fontSize: 12,
     lineHeight: 18,
-
     marginTop: 7,
     maxWidth: 270,
   },
@@ -741,43 +672,29 @@ const styles = StyleSheet.create({
   profileBadge: {
     width: 58,
     height: 58,
-
     borderRadius: 19,
-
     borderWidth: 1,
-    borderColor:
-      'rgba(255,255,255,0.25)',
-
-    backgroundColor:
-      'rgba(255,255,255,0.10)',
-
+    borderColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   roleBadge: {
     alignSelf: 'flex-start',
-
     flexDirection: 'row',
     alignItems: 'center',
-
-    backgroundColor:
-      'rgba(59,130,246,0.20)',
-
+    backgroundColor: 'rgba(59,130,246,0.20)',
     paddingHorizontal: 10,
     paddingVertical: 6,
-
     borderRadius: 999,
-
     marginTop: 13,
   },
 
   roleText: {
     color: '#DBEAFE',
-
     fontSize: 10,
     fontWeight: '700',
-
     marginLeft: 5,
   },
 
@@ -788,17 +705,12 @@ const styles = StyleSheet.create({
 
   accessCard: {
     minHeight: 82,
-
     flexDirection: 'row',
     alignItems: 'center',
-
     backgroundColor: '#EFF6FF',
-
     borderWidth: 1,
     borderColor: '#DBEAFE',
-
     borderRadius: 19,
-
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
@@ -806,11 +718,8 @@ const styles = StyleSheet.create({
   accessIcon: {
     width: 46,
     height: 46,
-
     borderRadius: 14,
-
     backgroundColor: '#DBEAFE',
-
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -822,38 +731,29 @@ const styles = StyleSheet.create({
 
   accessLabel: {
     color: colors.primary,
-
     fontSize: 9,
     fontWeight: '800',
-
     letterSpacing: 0.8,
   },
 
   accessTitle: {
     color: colors.text,
-
     fontSize: 14,
     fontWeight: '800',
-
     marginTop: 2,
   },
 
   accessDescription: {
     color: colors.textSecondary,
-
     fontSize: 10,
-
     marginTop: 2,
   },
 
   accessArrow: {
     width: 31,
     height: 31,
-
     borderRadius: 11,
-
     backgroundColor: '#DBEAFE',
-
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -865,46 +765,35 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     color: colors.text,
-
     fontSize: 20,
     fontWeight: '800',
   },
 
   sectionSubtitle: {
     color: colors.textSecondary,
-
     fontSize: 11,
-
     marginTop: 3,
   },
 
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-
     justifyContent: 'space-between',
   },
 
   menuCard: {
     width: '48.5%',
-
     minHeight: 116,
-
     backgroundColor: colors.surface,
-
     borderWidth: 1,
     borderColor: colors.border,
-
     borderRadius: 18,
-
     padding: 13,
-
     marginBottom: 11,
   },
 
   menuTop: {
     flexDirection: 'row',
-
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -912,12 +801,8 @@ const styles = StyleSheet.create({
   menuIcon: {
     width: 39,
     height: 39,
-
     borderRadius: 12,
-
-    backgroundColor:
-      colors.primaryLight,
-
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -925,37 +810,28 @@ const styles = StyleSheet.create({
   arrowCircle: {
     width: 27,
     height: 27,
-
     borderRadius: 10,
-
-    backgroundColor:
-      colors.background,
-
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   menuTitle: {
     color: colors.text,
-
     fontSize: 13,
     fontWeight: '800',
-
     marginTop: 10,
   },
 
   menuDescription: {
     color: colors.textSecondary,
-
     fontSize: 10,
     lineHeight: 14,
-
     marginTop: 2,
   },
 
   cardPressed: {
     opacity: 0.7,
-
     transform: [
       {
         scale: 0.98,
@@ -965,38 +841,27 @@ const styles = StyleSheet.create({
 
   divider: {
     height: 1,
-
     backgroundColor: colors.border,
-
     marginTop: 8,
     marginBottom: 15,
   },
 
   quickActions: {
     color: colors.textSecondary,
-
     fontSize: 9,
     fontWeight: '800',
-
     letterSpacing: 1.1,
-
     marginBottom: 9,
   },
 
   logoutButton: {
     minHeight: 65,
-
     flexDirection: 'row',
     alignItems: 'center',
-
-    backgroundColor:
-      colors.dangerLight,
-
+    backgroundColor: colors.dangerLight,
     borderWidth: 1,
     borderColor: '#FECACA',
-
     borderRadius: 17,
-
     paddingHorizontal: 13,
     paddingVertical: 10,
   },
@@ -1004,11 +869,8 @@ const styles = StyleSheet.create({
   logoutIcon: {
     width: 40,
     height: 40,
-
     borderRadius: 12,
-
     backgroundColor: '#FFFFFF',
-
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1020,16 +882,13 @@ const styles = StyleSheet.create({
 
   logoutTitle: {
     color: colors.danger,
-
     fontSize: 13,
     fontWeight: '800',
   },
 
   logoutDescription: {
     color: '#B91C1C',
-
     fontSize: 9,
-
     marginTop: 2,
   },
 
@@ -1043,23 +902,19 @@ const styles = StyleSheet.create({
 
   footer: {
     alignItems: 'center',
-
     paddingTop: 18,
     paddingBottom: 4,
   },
 
   footerBrand: {
     color: colors.primaryDark,
-
     fontSize: 12,
     fontWeight: '800',
   },
 
   footerText: {
     color: colors.textLight,
-
     fontSize: 9,
-
     marginTop: 2,
   },
 });
