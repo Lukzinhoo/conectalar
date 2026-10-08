@@ -4,8 +4,10 @@ name: Verificar ConectaLar
 on:
   push:
     branches: [main]
+
   pull_request:
     branches: [main]
+
   workflow_dispatch:
 
 permissions:
@@ -23,11 +25,11 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - name: Instalar dependencias
-        run: npm ci
+        run: npm install --package-lock=false
 
       - name: Verificar erros de TypeScript
         run: npx tsc --noEmit
