@@ -1,6 +1,10 @@
 import React from 'react';
+
 import { Platform } from 'react-native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+import {
+  createNativeStackNavigator,
+} from '@react-navigation/native-stack';
 
 // ======================================================
 // MOBILE - AUTENTICAÇÃO
@@ -46,13 +50,6 @@ import WebNovoMoradorScreen from '../screens/web/adm/WebNovoMoradorScreen';
 import WebReservasScreen from '../screens/web/adm/WebReservasScreen';
 import WebComunicadosScreen from '../screens/web/adm/WebComunicadosScreen';
 import WebOcorrenciasScreen from '../screens/web/adm/WebOcorrenciasScreen';
-
-import WebChatScreen from '../screens/web/adm/WebChatScreen';
-import WebChatGeralScreen from '../screens/web/adm/WebChatGeralScreen';
-import WebRegrasScreen from '../screens/web/adm/WebRegrasScreen';
-import WebHorariosScreen from '../screens/web/adm/WebHorariosScreen';
-import WebNotificacoesScreen from '../screens/web/adm/WebNotificacoesScreen';
-
 import WebFinanceiroScreen from '../screens/web/adm/WebFinanceiroScreen';
 
 // ======================================================
@@ -60,14 +57,25 @@ import WebFinanceiroScreen from '../screens/web/adm/WebFinanceiroScreen';
 // ======================================================
 
 import WebMoradorHomeScreen from '../screens/web/morador/WebMoradorHomeScreen';
+
 import WebMoradorReservasScreen from '../screens/web/morador/WebMoradorReservasScreen';
+
 import WebMoradorComunicadosScreen from '../screens/web/morador/WebMoradorComunicadosScreen';
+
 import WebMoradorOcorrenciasScreen from '../screens/web/morador/WebMoradorOcorrenciasScreen';
+
 import WebMoradorChatScreen from '../screens/web/morador/WebMoradorChatScreen';
+
 import WebMoradorChatGeralScreen from '../screens/web/morador/WebMoradorChatGeralScreen';
+
 import WebMoradorRegrasScreen from '../screens/web/morador/WebMoradorRegrasScreen';
+
 import WebMoradorHorariosScreen from '../screens/web/morador/WebMoradorHorariosScreen';
+
 import WebMoradorNotificacoesScreen from '../screens/web/morador/WebMoradorNotificacoesScreen';
+
+import WebMoradorFinanceiroScreen from '../screens/web/morador/WebMoradorFinanceiroScreen';
+
 import WebMoradorPerfilScreen from '../screens/web/morador/WebMoradorPerfilScreen';
 
 // ======================================================
@@ -124,16 +132,6 @@ export type AuthStackParamList = {
 
   WebOcorrencias: undefined;
 
-  WebChat: undefined;
-
-  WebChatGeral: undefined;
-
-  WebRegras: undefined;
-
-  WebHorarios: undefined;
-
-  WebNotificacoes: undefined;
-
   WebFinanceiro: undefined;
 
   // ----------------------------------------------------
@@ -157,6 +155,8 @@ export type AuthStackParamList = {
   WebMoradorHorarios: undefined;
 
   WebMoradorNotificacoes: undefined;
+
+  WebMoradorFinanceiro: undefined;
 
   WebMoradorPerfil: undefined;
 };
@@ -324,31 +324,6 @@ export default function AuthNavigator() {
           />
 
           <Stack.Screen
-            name="WebChat"
-            component={WebChatScreen}
-          />
-
-          <Stack.Screen
-            name="WebChatGeral"
-            component={WebChatGeralScreen}
-          />
-
-          <Stack.Screen
-            name="WebRegras"
-            component={WebRegrasScreen}
-          />
-
-          <Stack.Screen
-            name="WebHorarios"
-            component={WebHorariosScreen}
-          />
-
-          <Stack.Screen
-            name="WebNotificacoes"
-            component={WebNotificacoesScreen}
-          />
-
-          <Stack.Screen
             name="WebFinanceiro"
             component={WebFinanceiroScreen}
           />
@@ -400,6 +375,11 @@ export default function AuthNavigator() {
           <Stack.Screen
             name="WebMoradorNotificacoes"
             component={WebMoradorNotificacoesScreen}
+          />
+
+          <Stack.Screen
+            name="WebMoradorFinanceiro"
+            component={WebMoradorFinanceiroScreen}
           />
 
           <Stack.Screen

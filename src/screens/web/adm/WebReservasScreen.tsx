@@ -1,4 +1,9 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+﻿import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   ActivityIndicator,
@@ -8,10 +13,9 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
-
-import { useNavigation } from '@react-navigation/native';
 
 import {
   CalendarDays,
@@ -28,6 +32,7 @@ import {
 import { colors } from '../../../theme/theme';
 import { supabase } from '../../../services/supabase';
 import WebSidebar from '../../../components/WebSidebar';
+import WebLayout from '../../../components/WebLayout';
 
 type StatusReserva =
   | 'pendente'
@@ -76,6 +81,7 @@ function formatarData(data: string) {
 
 function formatarHora(hora: string | null) {
   if (!hora) return '--:--';
+
   return hora.slice(0, 5);
 }
 
@@ -90,44 +96,71 @@ function confirmar(mensagem: string) {
   return true;
 }
 
-function avisar(mensagem: string) {
-  if (
-    typeof globalThis !== 'undefined' &&
-    typeof (globalThis as any).alert === 'function'
-  ) {
-    (globalThis as any).alert(mensagem);
-  }
-}
-
 export default function WebReservasScreen() {
-  const navigation = useNavigation<any>();
+  const { width } = useWindowDimensions();
 
-  const [espacos, setEspacos] = useState<Espaco[]>([]);
-  const [reservas, setReservas] = useState<ReservaTela[]>([]);
+  const isMobile = width < 768;
+  const isTablet =
+    width >= 768 && width < 1100;
 
-  const [carregando, setCarregando] = useState(true);
-  const [atualizando, setAtualizando] = useState(false);
+  const usarCardsReservas = width < 1150;
 
-  const [alterandoReserva, setAlterandoReserva] =
-    useState<string | null>(null);
+  const [espacos, setEspacos] =
+    useState<Espaco[]>([]);
 
-  const [excluindoItem, setExcluindoItem] =
-    useState<string | null>(null);
+  const [reservas, setReservas] =
+    useState<ReservaTela[]>([]);
 
-  const [modalNovoEspaco, setModalNovoEspaco] =
+  const [carregando, setCarregando] =
+    useState(true);
+
+  const [atualizando, setAtualizando] =
     useState(false);
 
-  const [salvandoEspaco, setSalvandoEspaco] =
-    useState(false);
+  const [
+    alterandoReserva,
+    setAlterandoReserva,
+  ] = useState<string | null>(null);
 
-  const [nomeEspaco, setNomeEspaco] = useState('');
-  const [descricaoEspaco, setDescricaoEspaco] = useState('');
-  const [capacidadeEspaco, setCapacidadeEspaco] = useState('');
-  const [horaInicio, setHoraInicio] = useState('08:00');
-  const [horaFim, setHoraFim] = useState('22:00');
+  const [
+    excluindoItem,
+    setExcluindoItem,
+  ] = useState<string | null>(null);
 
-  const [erro, setErro] = useState('');
-  const [sucesso, setSucesso] = useState('');
+  const [
+    modalNovoEspaco,
+    setModalNovoEspaco,
+  ] = useState(false);
+
+  const [
+    salvandoEspaco,
+    setSalvandoEspaco,
+  ] = useState(false);
+
+  const [nomeEspaco, setNomeEspaco] =
+    useState('');
+
+  const [
+    descricaoEspaco,
+    setDescricaoEspaco,
+  ] = useState('');
+
+  const [
+    capacidadeEspaco,
+    setCapacidadeEspaco,
+  ] = useState('');
+
+  const [horaInicio, setHoraInicio] =
+    useState('08:00');
+
+  const [horaFim, setHoraFim] =
+    useState('22:00');
+
+  const [erro, setErro] =
+    useState('');
+
+  const [sucesso, setSucesso] =
+    useState('');
 
   const carregarDados = useCallback(
     async (silencioso = false) => {
@@ -148,7 +181,9 @@ export default function WebReservasScreen() {
           .select(
             'id, nome, descricao, capacidade, horario_inicio, horario_fim, ativo'
           )
-          .order('nome', { ascending: true });
+          .order('nome', {
+            ascending: true,
+          });
 
         if (espacosError) {
           throw espacosError;
@@ -162,7 +197,9 @@ export default function WebReservasScreen() {
           .select(
             'id, morador_id, espaco_id, data, horario_inicio, horario_fim, observacao, status, criado_em'
           )
-          .order('criado_em', { ascending: false });
+          .order('criado_em', {
+            ascending: false,
+          });
 
         if (reservasError) {
           throw reservasError;
@@ -172,7 +209,8 @@ export default function WebReservasScreen() {
           (espacosData ?? []) as Espaco[];
 
         const listaReservas =
-          (reservasData ?? []) as ReservaBanco[];
+          (reservasData ??
+            []) as ReservaBanco[];
 
         const moradorIds = [
           ...new Set(
@@ -182,7 +220,10 @@ export default function WebReservasScreen() {
           ),
         ];
 
-        let nomesMoradores: Record<string, string> = {};
+        let nomesMoradores: Record<
+          string,
+          string
+        > = {};
 
         if (moradorIds.length > 0) {
           const {
@@ -194,40 +235,53 @@ export default function WebReservasScreen() {
             .in('id', moradorIds);
 
           if (!perfisError) {
-            nomesMoradores = Object.fromEntries(
-              (perfisData ?? []).map(
-                (perfil: {
-                  id: string;
-                  nome: string;
-                }) => [
-                  perfil.id,
-                  perfil.nome,
-                ]
-              )
-            );
+            nomesMoradores =
+              Object.fromEntries(
+                (perfisData ?? []).map(
+                  (perfil: {
+                    id: string;
+                    nome: string;
+                  }) => [
+                    perfil.id,
+                    perfil.nome,
+                  ]
+                )
+              );
           }
         }
 
-        const nomesEspacos = Object.fromEntries(
-          listaEspacos.map((espaco) => [
-            espaco.id,
-            espaco.nome,
-          ])
-        );
+        const nomesEspacos =
+          Object.fromEntries(
+            listaEspacos.map(
+              (espaco) => [
+                espaco.id,
+                espaco.nome,
+              ]
+            )
+          );
 
-        const reservasFormatadas: ReservaTela[] =
-          listaReservas.map((reserva) => ({
-            ...reserva,
-            morador:
-              nomesMoradores[reserva.morador_id] ??
-              'Morador',
-            espaco:
-              nomesEspacos[reserva.espaco_id] ??
-              'EspaÃ§o',
-          }));
+        const reservasFormatadas:
+          ReservaTela[] =
+          listaReservas.map(
+            (reserva) => ({
+              ...reserva,
+
+              morador:
+                nomesMoradores[
+                  reserva.morador_id
+                ] ?? 'Morador',
+
+              espaco:
+                nomesEspacos[
+                  reserva.espaco_id
+                ] ?? 'Espaço',
+            })
+          );
 
         setEspacos(listaEspacos);
-        setReservas(reservasFormatadas);
+        setReservas(
+          reservasFormatadas
+        );
       } catch (error: any) {
         console.error(
           'Erro ao carregar reservas:',
@@ -236,7 +290,7 @@ export default function WebReservasScreen() {
 
         setErro(
           error?.message ||
-            'NÃ£o foi possÃ­vel carregar as reservas.'
+            'Não foi possível carregar as reservas.'
         );
       } finally {
         setCarregando(false);
@@ -255,11 +309,13 @@ export default function WebReservasScreen() {
       total: reservas.length,
 
       pendentes: reservas.filter(
-        (item) => item.status === 'pendente'
+        (item) =>
+          item.status === 'pendente'
       ).length,
 
       aprovadas: reservas.filter(
-        (item) => item.status === 'aprovada'
+        (item) =>
+          item.status === 'aprovada'
       ).length,
 
       recusadas: reservas.filter(
@@ -270,7 +326,9 @@ export default function WebReservasScreen() {
     };
   }, [reservas]);
 
-  function validarHorario(valor: string) {
+  function validarHorario(
+    valor: string
+  ) {
     return /^([01]\d|2[0-3]):[0-5]\d$/.test(
       valor
     );
@@ -291,16 +349,34 @@ export default function WebReservasScreen() {
     setModalNovoEspaco(true);
   }
 
+  function fecharNovoEspaco() {
+    if (salvandoEspaco) {
+      return;
+    }
+
+    setModalNovoEspaco(false);
+    setErro('');
+    limparFormulario();
+  }
+
   async function cadastrarEspaco() {
-    const nome = nomeEspaco.trim();
-    const descricao = descricaoEspaco.trim();
-    const capacidade = capacidadeEspaco.trim();
+    const nome =
+      nomeEspaco.trim();
+
+    const descricao =
+      descricaoEspaco.trim();
+
+    const capacidade =
+      capacidadeEspaco.trim();
 
     setErro('');
     setSucesso('');
 
     if (!nome) {
-      setErro('Digite o nome do espaÃ§o.');
+      setErro(
+        'Digite o nome do espaço.'
+      );
+
       return;
     }
 
@@ -311,13 +387,15 @@ export default function WebReservasScreen() {
       setErro(
         'Use o formato HH:MM. Exemplo: 08:00 ou 22:00.'
       );
+
       return;
     }
 
     if (horaInicio >= horaFim) {
       setErro(
-        'O horÃ¡rio final precisa ser maior que o horÃ¡rio inicial.'
+        'O horário final precisa ser maior que o horário inicial.'
       );
+
       return;
     }
 
@@ -327,26 +405,35 @@ export default function WebReservasScreen() {
         Number(capacidade) <= 0)
     ) {
       setErro(
-        'A capacidade precisa ser um nÃºmero maior que zero.'
+        'A capacidade precisa ser um número maior que zero.'
       );
+
       return;
     }
 
     try {
       setSalvandoEspaco(true);
 
-      const { error } = await supabase
-        .from('espacos_reserva')
-        .insert({
-          nome,
-          descricao: descricao || null,
-          capacidade: capacidade
-            ? Number(capacidade)
-            : null,
-          horario_inicio: horaInicio,
-          horario_fim: horaFim,
-          ativo: true,
-        });
+      const { error } =
+        await supabase
+          .from('espacos_reserva')
+          .insert({
+            nome,
+
+            descricao:
+              descricao || null,
+
+            capacidade: capacidade
+              ? Number(capacidade)
+              : null,
+
+            horario_inicio:
+              horaInicio,
+
+            horario_fim: horaFim,
+
+            ativo: true,
+          });
 
       if (error) {
         throw error;
@@ -356,19 +443,19 @@ export default function WebReservasScreen() {
       limparFormulario();
 
       setSucesso(
-        'EspaÃ§o cadastrado com sucesso.'
+        'Espaço cadastrado com sucesso.'
       );
 
       await carregarDados(true);
     } catch (error: any) {
       console.error(
-        'Erro ao cadastrar espaÃ§o:',
+        'Erro ao cadastrar espaço:',
         error
       );
 
       setErro(
         error?.message ||
-          'NÃ£o foi possÃ­vel cadastrar o espaÃ§o.'
+          'Não foi possível cadastrar o espaço.'
       );
     } finally {
       setSalvandoEspaco(false);
@@ -379,46 +466,50 @@ export default function WebReservasScreen() {
     espaco: Espaco
   ) {
     const confirmado = confirmar(
-      `Deseja realmente excluir o espaÃ§o "${espaco.nome}"?`
+      `Deseja realmente excluir o espaço "${espaco.nome}"?`
     );
 
-    if (!confirmado) return;
+    if (!confirmado) {
+      return;
+    }
 
     try {
       setErro('');
       setSucesso('');
+
       setExcluindoItem(
         `espaco-${espaco.id}`
       );
 
-      const { error } = await supabase
-        .from('espacos_reserva')
-        .delete()
-        .eq('id', espaco.id);
+      const { error } =
+        await supabase
+          .from('espacos_reserva')
+          .delete()
+          .eq('id', espaco.id);
 
       if (error) {
         throw error;
       }
 
       setSucesso(
-        'EspaÃ§o excluÃ­do com sucesso.'
+        'Espaço excluído com sucesso.'
       );
 
       await carregarDados(true);
     } catch (error: any) {
       console.error(
-        'Erro ao excluir espaÃ§o:',
+        'Erro ao excluir espaço:',
         error
       );
 
       if (error?.code === '23503') {
         setErro(
-          'Este espaÃ§o possui reservas vinculadas. Exclua essas reservas primeiro.'
+          'Este espaço possui reservas vinculadas. Exclua essas reservas primeiro.'
         );
       } else {
         setErro(
           error?.message ||
-            'NÃ£o foi possÃ­vel excluir o espaÃ§o.'
+            'Não foi possível excluir o espaço.'
         );
       }
     } finally {
@@ -433,7 +524,9 @@ export default function WebReservasScreen() {
       `Deseja excluir a reserva de ${reserva.morador} para ${reserva.espaco}?`
     );
 
-    if (!confirmado) return;
+    if (!confirmado) {
+      return;
+    }
 
     try {
       setErro('');
@@ -443,17 +536,18 @@ export default function WebReservasScreen() {
         `reserva-${reserva.id}`
       );
 
-      const { error } = await supabase
-        .from('reservas')
-        .delete()
-        .eq('id', reserva.id);
+      const { error } =
+        await supabase
+          .from('reservas')
+          .delete()
+          .eq('id', reserva.id);
 
       if (error) {
         throw error;
       }
 
       setSucesso(
-        'Reserva excluÃ­da com sucesso.'
+        'Reserva excluída com sucesso.'
       );
 
       await carregarDados(true);
@@ -465,7 +559,7 @@ export default function WebReservasScreen() {
 
       setErro(
         error?.message ||
-          'NÃ£o foi possÃ­vel excluir a reserva.'
+          'Não foi possível excluir a reserva.'
       );
     } finally {
       setExcluindoItem(null);
@@ -474,7 +568,9 @@ export default function WebReservasScreen() {
 
   async function alterarStatus(
     reserva: ReservaTela,
-    novoStatus: 'aprovada' | 'recusada'
+    novoStatus:
+      | 'aprovada'
+      | 'recusada'
   ) {
     const textoAcao =
       novoStatus === 'aprovada'
@@ -485,21 +581,28 @@ export default function WebReservasScreen() {
       `Deseja ${textoAcao} a reserva de ${reserva.morador}?`
     );
 
-    if (!confirmado) return;
+    if (!confirmado) {
+      return;
+    }
 
     try {
       setErro('');
       setSucesso('');
-      setAlterandoReserva(reserva.id);
 
-      const { error } = await supabase
-        .from('reservas')
-        .update({
-          status: novoStatus,
-          atualizado_em:
-            new Date().toISOString(),
-        })
-        .eq('id', reserva.id);
+      setAlterandoReserva(
+        reserva.id
+      );
+
+      const { error } =
+        await supabase
+          .from('reservas')
+          .update({
+            status: novoStatus,
+
+            atualizado_em:
+              new Date().toISOString(),
+          })
+          .eq('id', reserva.id);
 
       if (error) {
         throw error;
@@ -520,7 +623,7 @@ export default function WebReservasScreen() {
 
       setErro(
         error?.message ||
-          'NÃ£o foi possÃ­vel atualizar a reserva.'
+          'Não foi possível atualizar a reserva.'
       );
     } finally {
       setAlterandoReserva(null);
@@ -545,215 +648,335 @@ export default function WebReservasScreen() {
     }
   }
 
+  function statusStyle(
+    status: StatusReserva
+  ) {
+    if (status === 'aprovada') {
+      return {
+        badge:
+          styles.statusApproved,
+        text:
+          styles.statusApprovedText,
+      };
+    }
+
+    if (
+      status === 'recusada' ||
+      status === 'cancelada'
+    ) {
+      return {
+        badge:
+          styles.statusRejected,
+        text:
+          styles.statusRejectedText,
+      };
+    }
+
+    return {
+      badge: undefined,
+      text: undefined,
+    };
+  }
+
   return (
-    <View style={styles.container}>
-      {/* SIDEBAR PADRÃƒO */}
-      <WebSidebar active="reservas" />
+    <WebLayout
+      sidebar={
+        <WebSidebar active="reservas" />
+      }
+    >
+      <View
+        style={[
+          styles.header,
 
-      {/* CONTEÃšDO */}
-      <ScrollView
-        style={styles.main}
-        contentContainerStyle={
-          styles.mainContent
-        }
+          isMobile &&
+            styles.headerMobile,
+        ]}
       >
-        {/* CABEÃ‡ALHO */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.pageTitle}>
-              Reservas
-            </Text>
+        <View
+          style={[
+            styles.headerText,
 
-            <Text
-              style={styles.pageSubtitle}
-            >
-              Gerencie os espaÃ§os e as
-              solicitaÃ§Ãµes de reserva dos
-              moradores.
-            </Text>
-          </View>
+            isMobile &&
+              styles.headerTextMobile,
+          ]}
+        >
+          <Text
+            style={[
+              styles.pageTitle,
 
-          <View
-            style={styles.headerActions}
+              isMobile &&
+                styles.pageTitleMobile,
+            ]}
           >
-            <Pressable
-              style={styles.refreshButton}
-              onPress={() =>
-                carregarDados(true)
-              }
-              disabled={atualizando}
-            >
-              {atualizando ? (
-                <ActivityIndicator
-                  size="small"
-                  color={colors.primary}
-                />
-              ) : (
-                <RefreshCw
-                  size={17}
-                  color={colors.primary}
-                />
-              )}
+            Reservas
+          </Text>
 
-              <Text
-                style={styles.refreshText}
-              >
-                Atualizar
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.newButton}
-              onPress={abrirNovoEspaco}
-            >
-              <Plus
-                size={18}
-                color="#FFFFFF"
-              />
-
-              <Text
-                style={styles.newButtonText}
-              >
-                Novo espaÃ§o
-              </Text>
-            </Pressable>
-          </View>
+          <Text
+            style={styles.pageSubtitle}
+          >
+            Gerencie os espaços e as
+            solicitações de reserva dos
+            moradores.
+          </Text>
         </View>
 
-        {erro ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>
-              {erro}
-            </Text>
-          </View>
-        ) : null}
+        <View
+          style={[
+            styles.headerActions,
 
-        {sucesso ? (
-          <View
-            style={styles.successBox}
+            isMobile &&
+              styles.headerActionsMobile,
+          ]}
+        >
+          <Pressable
+            style={({ pressed }) => [
+              styles.refreshButton,
+
+              isMobile &&
+                styles.headerActionMobile,
+
+              pressed &&
+                styles.pressed,
+            ]}
+            onPress={() =>
+              carregarDados(true)
+            }
+            disabled={atualizando}
           >
-            <Text
-              style={styles.successText}
-            >
-              {sucesso}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* RESUMO */}
-        <View style={styles.summaryRow}>
-          <SummaryCard
-            titulo="Total"
-            valor={resumo.total}
-            icon={
-              <CalendarDays
-                size={21}
-                color={colors.primary}
-              />
-            }
-          />
-
-          <SummaryCard
-            titulo="Pendentes"
-            valor={resumo.pendentes}
-            icon={
-              <Clock
-                size={21}
-                color="#92400E"
-              />
-            }
-            fundoIcone="#FEF3C7"
-          />
-
-          <SummaryCard
-            titulo="Aprovadas"
-            valor={resumo.aprovadas}
-            icon={
-              <Check
-                size={21}
-                color="#166534"
-              />
-            }
-            fundoIcone="#DCFCE7"
-          />
-
-          <SummaryCard
-            titulo="Recusadas"
-            valor={resumo.recusadas}
-            icon={
-              <X
-                size={21}
-                color="#B91C1C"
-              />
-            }
-            fundoIcone="#FEE2E2"
-          />
-        </View>
-
-        {/* ESPAÃ‡OS */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View>
-              <Text
-                style={styles.sectionTitle}
-              >
-                EspaÃ§os disponÃ­veis
-              </Text>
-
-              <Text
-                style={
-                  styles.sectionSubtitle
-                }
-              >
-                Ãreas cadastradas para
-                reserva.
-              </Text>
-            </View>
-
-            <Text style={styles.counter}>
-              {espacos.length} espaÃ§o(s)
-            </Text>
-          </View>
-
-          {carregando ? (
-            <View style={styles.loading}>
+            {atualizando ? (
               <ActivityIndicator
-                size="large"
+                size="small"
                 color={colors.primary}
               />
-
-              <Text
-                style={styles.loadingText}
-              >
-                Carregando...
-              </Text>
-            </View>
-          ) : espacos.length === 0 ? (
-            <View style={styles.empty}>
-              <Home
-                size={28}
-                color={colors.textSecondary}
+            ) : (
+              <RefreshCw
+                size={17}
+                color={colors.primary}
               />
+            )}
 
-              <Text
-                style={styles.emptyTitle}
-              >
-                Nenhum espaÃ§o cadastrado
-              </Text>
+            <Text
+              style={styles.refreshText}
+            >
+              Atualizar
+            </Text>
+          </Pressable>
 
-              <Text
-                style={styles.emptyText}
-              >
-                Clique em Novo espaÃ§o para
-                cadastrar uma Ã¡rea.
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.spaceGrid}>
-              {espacos.map((espaco) => (
+          <Pressable
+            style={({ pressed }) => [
+              styles.newButton,
+
+              isMobile &&
+                styles.headerActionMobile,
+
+              pressed &&
+                styles.pressed,
+            ]}
+            onPress={abrirNovoEspaco}
+          >
+            <Plus
+              size={18}
+              color="#FFFFFF"
+            />
+
+            <Text
+              style={
+                styles.newButtonText
+              }
+            >
+              Novo espaço
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {erro ? (
+        <View style={styles.errorBox}>
+          <Text
+            style={styles.errorText}
+          >
+            {erro}
+          </Text>
+        </View>
+      ) : null}
+
+      {sucesso ? (
+        <View
+          style={styles.successBox}
+        >
+          <Text
+            style={styles.successText}
+          >
+            {sucesso}
+          </Text>
+        </View>
+      ) : null}
+
+      <View
+        style={[
+          styles.summaryRow,
+
+          (isMobile ||
+            isTablet) &&
+            styles.summaryRowResponsive,
+        ]}
+      >
+        <SummaryCard
+          titulo="Total"
+          valor={resumo.total}
+          icon={
+            <CalendarDays
+              size={21}
+              color={colors.primary}
+            />
+          }
+          responsive={
+            isMobile || isTablet
+          }
+        />
+
+        <SummaryCard
+          titulo="Pendentes"
+          valor={resumo.pendentes}
+          icon={
+            <Clock
+              size={21}
+              color="#92400E"
+            />
+          }
+          fundoIcone="#FEF3C7"
+          responsive={
+            isMobile || isTablet
+          }
+        />
+
+        <SummaryCard
+          titulo="Aprovadas"
+          valor={resumo.aprovadas}
+          icon={
+            <Check
+              size={21}
+              color="#166534"
+            />
+          }
+          fundoIcone="#DCFCE7"
+          responsive={
+            isMobile || isTablet
+          }
+        />
+
+        <SummaryCard
+          titulo="Recusadas"
+          valor={resumo.recusadas}
+          icon={
+            <X
+              size={21}
+              color="#B91C1C"
+            />
+          }
+          fundoIcone="#FEE2E2"
+          responsive={
+            isMobile || isTablet
+          }
+          last
+        />
+      </View>
+
+      <View
+        style={[
+          styles.card,
+
+          isMobile &&
+            styles.cardMobile,
+        ]}
+      >
+        <View
+          style={[
+            styles.cardHeader,
+
+            isMobile &&
+              styles.cardHeaderMobile,
+          ]}
+        >
+          <View style={styles.cardHeaderText}>
+            <Text
+              style={styles.sectionTitle}
+            >
+              Espaços disponíveis
+            </Text>
+
+            <Text
+              style={
+                styles.sectionSubtitle
+              }
+            >
+              Áreas cadastradas para
+              reserva.
+            </Text>
+          </View>
+
+          <Text style={styles.counter}>
+            {espacos.length} espaço(s)
+          </Text>
+        </View>
+
+        {carregando ? (
+          <View style={styles.loading}>
+            <ActivityIndicator
+              size="large"
+              color={colors.primary}
+            />
+
+            <Text
+              style={styles.loadingText}
+            >
+              Carregando...
+            </Text>
+          </View>
+        ) : espacos.length === 0 ? (
+          <View style={styles.empty}>
+            <Home
+              size={28}
+              color={
+                colors.textSecondary
+              }
+            />
+
+            <Text
+              style={styles.emptyTitle}
+            >
+              Nenhum espaço cadastrado
+            </Text>
+
+            <Text
+              style={styles.emptyText}
+            >
+              Clique em Novo espaço para
+              cadastrar uma área.
+            </Text>
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.spaceGrid,
+
+              isMobile &&
+                styles.spaceGridMobile,
+            ]}
+          >
+            {espacos.map(
+              (espaco) => (
                 <View
                   key={espaco.id}
-                  style={styles.spaceCard}
+                  style={[
+                    styles.spaceCard,
+
+                    isMobile &&
+                      styles.spaceCardMobile,
+
+                    isTablet &&
+                      styles.spaceCardTablet,
+                  ]}
                 >
                   <View
                     style={
@@ -761,18 +984,27 @@ export default function WebReservasScreen() {
                     }
                   >
                     <View
-                      style={styles.spaceIcon}
+                      style={
+                        styles.spaceIcon
+                      }
                     >
                       <Home
                         size={22}
-                        color={colors.primary}
+                        color={
+                          colors.primary
+                        }
                       />
                     </View>
 
                     <Pressable
-                      style={
-                        styles.deleteIcon
-                      }
+                      style={({
+                        pressed,
+                      }) => [
+                        styles.deleteIcon,
+
+                        pressed &&
+                          styles.pressed,
+                      ]}
                       disabled={
                         excluindoItem ===
                         `espaco-${espaco.id}`
@@ -799,7 +1031,9 @@ export default function WebReservasScreen() {
                   </View>
 
                   <Text
-                    style={styles.spaceTitle}
+                    style={
+                      styles.spaceTitle
+                    }
                   >
                     {espaco.nome}
                   </Text>
@@ -808,14 +1042,15 @@ export default function WebReservasScreen() {
                     style={
                       styles.spaceDescription
                     }
-                    numberOfLines={2}
                   >
                     {espaco.descricao ||
-                      'Sem descriÃ§Ã£o'}
+                      'Sem descrição'}
                   </Text>
 
                   <View
-                    style={styles.spaceInfo}
+                    style={
+                      styles.spaceInfo
+                    }
                   >
                     <Clock
                       size={14}
@@ -832,7 +1067,7 @@ export default function WebReservasScreen() {
                       {formatarHora(
                         espaco.horario_inicio
                       )}{' '}
-                      Ã s{' '}
+                      às{' '}
                       {formatarHora(
                         espaco.horario_fim
                       )}
@@ -841,7 +1076,9 @@ export default function WebReservasScreen() {
 
                   {espaco.capacidade ? (
                     <View
-                      style={styles.spaceInfo}
+                      style={
+                        styles.spaceInfo
+                      }
                     >
                       <Users
                         size={14}
@@ -855,198 +1092,214 @@ export default function WebReservasScreen() {
                           styles.spaceInfoText
                         }
                       >
-                        {espaco.capacidade}{' '}
+                        {
+                          espaco.capacidade
+                        }{' '}
                         pessoas
                       </Text>
                     </View>
                   ) : null}
                 </View>
-              ))}
-            </View>
-          )}
-        </View>
+              )
+            )}
+          </View>
+        )}
+      </View>
 
-        {/* RESERVAS */}
+      <View
+        style={[
+          styles.card,
+          styles.reservasCard,
+
+          isMobile &&
+            styles.cardMobile,
+        ]}
+      >
         <View
           style={[
-            styles.card,
-            styles.reservasCard,
+            styles.cardHeader,
+
+            isMobile &&
+              styles.cardHeaderMobile,
           ]}
         >
-          <View style={styles.cardHeader}>
-            <View>
-              <Text
-                style={styles.sectionTitle}
-              >
-                SolicitaÃ§Ãµes de reserva
-              </Text>
+          <View style={styles.cardHeaderText}>
+            <Text
+              style={styles.sectionTitle}
+            >
+              Solicitações de reserva
+            </Text>
 
-              <Text
-                style={
-                  styles.sectionSubtitle
-                }
-              >
-                Aprove, recuse ou exclua as
-                reservas dos moradores.
-              </Text>
-            </View>
-
-            <Text style={styles.counter}>
-              {reservas.length} reserva(s)
+            <Text
+              style={
+                styles.sectionSubtitle
+              }
+            >
+              Aprove, recuse ou exclua as
+              reservas dos moradores.
             </Text>
           </View>
 
-          {!carregando &&
-          reservas.length === 0 ? (
-            <View style={styles.empty}>
-              <CalendarDays
-                size={28}
-                color={colors.textSecondary}
-              />
+          <Text style={styles.counter}>
+            {reservas.length} reserva(s)
+          </Text>
+        </View>
 
-              <Text
-                style={styles.emptyTitle}
-              >
-                Nenhuma reserva encontrada
-              </Text>
+        {!carregando &&
+        reservas.length === 0 ? (
+          <View style={styles.empty}>
+            <CalendarDays
+              size={28}
+              color={
+                colors.textSecondary
+              }
+            />
 
-              <Text
-                style={styles.emptyText}
-              >
-                Quando um morador solicitar
-                uma reserva, ela aparecerÃ¡
-                aqui.
-              </Text>
-            </View>
-          ) : (
-            <ScrollView horizontal>
-              <View style={styles.table}>
-                <View
-                  style={styles.tableHeader}
-                >
-                  <Text
-                    style={[
-                      styles.tableHeaderText,
-                      styles.colMorador,
-                    ]}
+            <Text
+              style={styles.emptyTitle}
+            >
+              Nenhuma reserva encontrada
+            </Text>
+
+            <Text
+              style={styles.emptyText}
+            >
+              Quando um morador solicitar
+              uma reserva, ela aparecerá
+              aqui.
+            </Text>
+          </View>
+        ) : usarCardsReservas ? (
+          <View
+            style={
+              styles.reservationCards
+            }
+          >
+            {reservas.map(
+              (reserva) => {
+                const processando =
+                  alterandoReserva ===
+                  reserva.id;
+
+                const status =
+                  statusStyle(
+                    reserva.status
+                  );
+
+                return (
+                  <View
+                    key={reserva.id}
+                    style={
+                      styles.reservationCard
+                    }
                   >
-                    MORADOR
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.tableHeaderText,
-                      styles.colEspaco,
-                    ]}
-                  >
-                    ESPAÃ‡O
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.tableHeaderText,
-                      styles.colData,
-                    ]}
-                  >
-                    DATA
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.tableHeaderText,
-                      styles.colHorario,
-                    ]}
-                  >
-                    HORÃRIO
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.tableHeaderText,
-                      styles.colStatus,
-                    ]}
-                  >
-                    STATUS
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.tableHeaderText,
-                      styles.colAcoes,
-                    ]}
-                  >
-                    AÃ‡Ã•ES
-                  </Text>
-                </View>
-
-                {reservas.map(
-                  (reserva) => {
-                    const processando =
-                      alterandoReserva ===
-                      reserva.id;
-
-                    return (
+                    <View
+                      style={
+                        styles.reservationCardTop
+                      }
+                    >
                       <View
-                        key={reserva.id}
                         style={
-                          styles.tableRow
+                          styles.reservationAvatar
                         }
                       >
-                        <View
+                        <Users
+                          size={19}
+                          color={
+                            colors.primary
+                          }
+                        />
+                      </View>
+
+                      <View
+                        style={
+                          styles.reservationTitleArea
+                        }
+                      >
+                        <Text
                           style={
-                            styles.colMorador
+                            styles.reservationResident
                           }
                         >
-                          <Text
-                            style={
-                              styles.primaryText
-                            }
-                            numberOfLines={1}
-                          >
-                            {reserva.morador}
-                          </Text>
-
-                          {reserva.observacao ? (
-                            <Text
-                              style={
-                                styles.secondaryText
-                              }
-                              numberOfLines={
-                                1
-                              }
-                            >
-                              {
-                                reserva.observacao
-                              }
-                            </Text>
-                          ) : null}
-                        </View>
-
-                        <Text
-                          style={[
-                            styles.tableText,
-                            styles.colEspaco,
-                          ]}
-                        >
-                          {reserva.espaco}
+                          {
+                            reserva.morador
+                          }
                         </Text>
 
                         <Text
+                          style={
+                            styles.reservationSpace
+                          }
+                        >
+                          {reserva.espaco}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          status.badge,
+                        ]}
+                      >
+                        <Text
                           style={[
-                            styles.tableText,
-                            styles.colData,
+                            styles.statusText,
+                            status.text,
                           ]}
+                        >
+                          {statusTexto(
+                            reserva.status
+                          )}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View
+                      style={
+                        styles.reservationInfoGrid
+                      }
+                    >
+                      <View
+                        style={
+                          styles.reservationInfo
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.infoLabel
+                          }
+                        >
+                          DATA
+                        </Text>
+
+                        <Text
+                          style={
+                            styles.infoValue
+                          }
                         >
                           {formatarData(
                             reserva.data
                           )}
                         </Text>
+                      </View>
+
+                      <View
+                        style={
+                          styles.reservationInfo
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.infoLabel
+                          }
+                        >
+                          HORÁRIO
+                        </Text>
 
                         <Text
-                          style={[
-                            styles.tableText,
-                            styles.colHorario,
-                          ]}
+                          style={
+                            styles.infoValue
+                          }
                         >
                           {formatarHora(
                             reserva.horario_inicio
@@ -1056,173 +1309,506 @@ export default function WebReservasScreen() {
                             reserva.horario_fim
                           )}
                         </Text>
+                      </View>
+                    </View>
 
-                        <View
+                    {reserva.observacao ? (
+                      <View
+                        style={
+                          styles.observationBox
+                        }
+                      >
+                        <Text
                           style={
-                            styles.colStatus
+                            styles.infoLabel
                           }
                         >
-                          <View
-                            style={[
-                              styles.statusBadge,
+                          OBSERVAÇÃO
+                        </Text>
 
-                              reserva.status ===
-                                'aprovada' &&
-                                styles.statusApproved,
-
-                              (reserva.status ===
-                                'recusada' ||
-                                reserva.status ===
-                                  'cancelada') &&
-                                styles.statusRejected,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.statusText,
-
-                                reserva.status ===
-                                  'aprovada' &&
-                                  styles.statusApprovedText,
-
-                                (reserva.status ===
-                                  'recusada' ||
-                                  reserva.status ===
-                                    'cancelada') &&
-                                  styles.statusRejectedText,
-                              ]}
-                            >
-                              {statusTexto(
-                                reserva.status
-                              )}
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View
+                        <Text
                           style={
-                            styles.colAcoes
+                            styles.observationText
                           }
                         >
-                          {reserva.status ===
-                          'pendente' ? (
-                            <>
-                              <Pressable
-                                style={
-                                  styles.approveButton
-                                }
-                                disabled={
-                                  processando
-                                }
-                                onPress={() =>
-                                  alterarStatus(
-                                    reserva,
-                                    'aprovada'
-                                  )
-                                }
-                              >
-                                {processando ? (
-                                  <ActivityIndicator
-                                    size="small"
-                                    color="#FFFFFF"
-                                  />
-                                ) : (
-                                  <Check
-                                    size={15}
-                                    color="#FFFFFF"
-                                  />
-                                )}
-                              </Pressable>
+                          {
+                            reserva.observacao
+                          }
+                        </Text>
+                      </View>
+                    ) : null}
 
-                              <Pressable
-                                style={
-                                  styles.rejectButton
-                                }
-                                disabled={
-                                  processando
-                                }
-                                onPress={() =>
-                                  alterarStatus(
-                                    reserva,
-                                    'recusada'
-                                  )
-                                }
-                              >
-                                <X
-                                  size={15}
-                                  color="#B91C1C"
-                                />
-                              </Pressable>
-                            </>
-                          ) : null}
-
+                    <View
+                      style={
+                        styles.mobileActions
+                      }
+                    >
+                      {reserva.status ===
+                      'pendente' ? (
+                        <>
                           <Pressable
-                            style={
-                              styles.deleteButton
-                            }
+                            style={({
+                              pressed,
+                            }) => [
+                              styles.mobileApproveButton,
+
+                              pressed &&
+                                styles.pressed,
+                            ]}
                             disabled={
-                              excluindoItem ===
-                              `reserva-${reserva.id}`
+                              processando
                             }
                             onPress={() =>
-                              excluirReserva(
-                                reserva
+                              alterarStatus(
+                                reserva,
+                                'aprovada'
                               )
                             }
                           >
-                            {excluindoItem ===
-                            `reserva-${reserva.id}` ? (
+                            {processando ? (
                               <ActivityIndicator
                                 size="small"
-                                color="#DC2626"
+                                color="#FFFFFF"
                               />
                             ) : (
-                              <Trash2
-                                size={15}
-                                color="#DC2626"
+                              <Check
+                                size={16}
+                                color="#FFFFFF"
                               />
                             )}
+
+                            <Text
+                              style={
+                                styles.mobileApproveText
+                              }
+                            >
+                              Aprovar
+                            </Text>
                           </Pressable>
+
+                          <Pressable
+                            style={({
+                              pressed,
+                            }) => [
+                              styles.mobileRejectButton,
+
+                              pressed &&
+                                styles.pressed,
+                            ]}
+                            disabled={
+                              processando
+                            }
+                            onPress={() =>
+                              alterarStatus(
+                                reserva,
+                                'recusada'
+                              )
+                            }
+                          >
+                            <X
+                              size={16}
+                              color="#B91C1C"
+                            />
+
+                            <Text
+                              style={
+                                styles.mobileRejectText
+                              }
+                            >
+                              Recusar
+                            </Text>
+                          </Pressable>
+                        </>
+                      ) : null}
+
+                      <Pressable
+                        style={({
+                          pressed,
+                        }) => [
+                          styles.mobileDeleteButton,
+
+                          reserva.status !==
+                            'pendente' &&
+                            styles.mobileDeleteButtonFull,
+
+                          pressed &&
+                            styles.pressed,
+                        ]}
+                        disabled={
+                          excluindoItem ===
+                          `reserva-${reserva.id}`
+                        }
+                        onPress={() =>
+                          excluirReserva(
+                            reserva
+                          )
+                        }
+                      >
+                        {excluindoItem ===
+                        `reserva-${reserva.id}` ? (
+                          <ActivityIndicator
+                            size="small"
+                            color="#DC2626"
+                          />
+                        ) : (
+                          <Trash2
+                            size={16}
+                            color="#DC2626"
+                          />
+                        )}
+
+                        <Text
+                          style={
+                            styles.mobileDeleteText
+                          }
+                        >
+                          Excluir
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                );
+              }
+            )}
+          </View>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator
+          >
+            <View style={styles.table}>
+              <View
+                style={
+                  styles.tableHeader
+                }
+              >
+                <Text
+                  style={[
+                    styles.tableHeaderText,
+                    styles.colMorador,
+                  ]}
+                >
+                  MORADOR
+                </Text>
+
+                <Text
+                  style={[
+                    styles.tableHeaderText,
+                    styles.colEspaco,
+                  ]}
+                >
+                  ESPAÇO
+                </Text>
+
+                <Text
+                  style={[
+                    styles.tableHeaderText,
+                    styles.colData,
+                  ]}
+                >
+                  DATA
+                </Text>
+
+                <Text
+                  style={[
+                    styles.tableHeaderText,
+                    styles.colHorario,
+                  ]}
+                >
+                  HORÁRIO
+                </Text>
+
+                <Text
+                  style={[
+                    styles.tableHeaderText,
+                    styles.colStatus,
+                  ]}
+                >
+                  STATUS
+                </Text>
+
+                <Text
+                  style={[
+                    styles.tableHeaderText,
+                    styles.colAcoes,
+                  ]}
+                >
+                  AÇÕES
+                </Text>
+              </View>
+
+              {reservas.map(
+                (reserva) => {
+                  const processando =
+                    alterandoReserva ===
+                    reserva.id;
+
+                  const status =
+                    statusStyle(
+                      reserva.status
+                    );
+
+                  return (
+                    <View
+                      key={reserva.id}
+                      style={
+                        styles.tableRow
+                      }
+                    >
+                      <View
+                        style={
+                          styles.colMorador
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.primaryText
+                          }
+                          numberOfLines={
+                            1
+                          }
+                        >
+                          {
+                            reserva.morador
+                          }
+                        </Text>
+
+                        {reserva.observacao ? (
+                          <Text
+                            style={
+                              styles.secondaryText
+                            }
+                            numberOfLines={
+                              1
+                            }
+                          >
+                            {
+                              reserva.observacao
+                            }
+                          </Text>
+                        ) : null}
+                      </View>
+
+                      <Text
+                        style={[
+                          styles.tableText,
+                          styles.colEspaco,
+                        ]}
+                      >
+                        {reserva.espaco}
+                      </Text>
+
+                      <Text
+                        style={[
+                          styles.tableText,
+                          styles.colData,
+                        ]}
+                      >
+                        {formatarData(
+                          reserva.data
+                        )}
+                      </Text>
+
+                      <Text
+                        style={[
+                          styles.tableText,
+                          styles.colHorario,
+                        ]}
+                      >
+                        {formatarHora(
+                          reserva.horario_inicio
+                        )}{' '}
+                        -{' '}
+                        {formatarHora(
+                          reserva.horario_fim
+                        )}
+                      </Text>
+
+                      <View
+                        style={
+                          styles.colStatus
+                        }
+                      >
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            status.badge,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.statusText,
+                              status.text,
+                            ]}
+                          >
+                            {statusTexto(
+                              reserva.status
+                            )}
+                          </Text>
                         </View>
                       </View>
-                    );
-                  }
-                )}
-              </View>
-            </ScrollView>
-          )}
-        </View>
-      </ScrollView>
 
-      {/* MODAL NOVO ESPAÃ‡O */}
+                      <View
+                        style={
+                          styles.colAcoes
+                        }
+                      >
+                        {reserva.status ===
+                        'pendente' ? (
+                          <>
+                            <Pressable
+                              style={({
+                                pressed,
+                              }) => [
+                                styles.approveButton,
+
+                                pressed &&
+                                  styles.pressed,
+                              ]}
+                              disabled={
+                                processando
+                              }
+                              onPress={() =>
+                                alterarStatus(
+                                  reserva,
+                                  'aprovada'
+                                )
+                              }
+                            >
+                              {processando ? (
+                                <ActivityIndicator
+                                  size="small"
+                                  color="#FFFFFF"
+                                />
+                              ) : (
+                                <Check
+                                  size={15}
+                                  color="#FFFFFF"
+                                />
+                              )}
+                            </Pressable>
+
+                            <Pressable
+                              style={({
+                                pressed,
+                              }) => [
+                                styles.rejectButton,
+
+                                pressed &&
+                                  styles.pressed,
+                              ]}
+                              disabled={
+                                processando
+                              }
+                              onPress={() =>
+                                alterarStatus(
+                                  reserva,
+                                  'recusada'
+                                )
+                              }
+                            >
+                              <X
+                                size={15}
+                                color="#B91C1C"
+                              />
+                            </Pressable>
+                          </>
+                        ) : null}
+
+                        <Pressable
+                          style={({
+                            pressed,
+                          }) => [
+                            styles.deleteButton,
+
+                            pressed &&
+                              styles.pressed,
+                          ]}
+                          disabled={
+                            excluindoItem ===
+                            `reserva-${reserva.id}`
+                          }
+                          onPress={() =>
+                            excluirReserva(
+                              reserva
+                            )
+                          }
+                        >
+                          {excluindoItem ===
+                          `reserva-${reserva.id}` ? (
+                            <ActivityIndicator
+                              size="small"
+                              color="#DC2626"
+                            />
+                          ) : (
+                            <Trash2
+                              size={15}
+                              color="#DC2626"
+                            />
+                          )}
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                }
+              )}
+            </View>
+          </ScrollView>
+        )}
+      </View>
+
       <Modal
         visible={modalNovoEspaco}
         transparent
         animationType="fade"
-        onRequestClose={() => {
-          if (!salvandoEspaco) {
-            setModalNovoEspaco(false);
-          }
-        }}
+        onRequestClose={
+          fecharNovoEspaco
+        }
+        statusBarTranslucent
       >
         <View
-          style={styles.modalOverlay}
+          style={[
+            styles.modalOverlay,
+
+            isMobile &&
+              styles.modalOverlayMobile,
+          ]}
         >
-          <View style={styles.modalCard}>
+          <View
+            style={[
+              styles.modalCard,
+
+              isMobile &&
+                styles.modalCardMobile,
+            ]}
+          >
             <View
-              style={styles.modalHeader}
+              style={
+                styles.modalHeader
+              }
             >
-              <View>
+              <View
+                style={
+                  styles.modalHeaderText
+                }
+              >
                 <Text
-                  style={styles.modalLabel}
+                  style={
+                    styles.modalLabel
+                  }
                 >
                   RESERVAS
                 </Text>
 
                 <Text
-                  style={styles.modalTitle}
+                  style={[
+                    styles.modalTitle,
+
+                    isMobile &&
+                      styles.modalTitleMobile,
+                  ]}
                 >
-                  Novo espaÃ§o
+                  Novo espaço
                 </Text>
 
                 <Text
@@ -1230,16 +1816,25 @@ export default function WebReservasScreen() {
                     styles.modalSubtitle
                   }
                 >
-                  Cadastre uma Ã¡rea
-                  disponÃ­vel para reserva.
+                  Cadastre uma área
+                  disponível para reserva.
                 </Text>
               </View>
 
               <Pressable
-                style={styles.closeButton}
-                disabled={salvandoEspaco}
-                onPress={() =>
-                  setModalNovoEspaco(false)
+                style={({
+                  pressed,
+                }) => [
+                  styles.closeButton,
+
+                  pressed &&
+                    styles.pressed,
+                ]}
+                disabled={
+                  salvandoEspaco
+                }
+                onPress={
+                  fecharNovoEspaco
                 }
               >
                 <X
@@ -1249,132 +1844,202 @@ export default function WebReservasScreen() {
               </Pressable>
             </View>
 
-            {erro ? (
-              <View
-                style={styles.modalError}
-              >
-                <Text
-                  style={styles.errorText}
-                >
-                  {erro}
-                </Text>
-              </View>
-            ) : null}
-
-            <Text
-              style={styles.inputLabel}
-            >
-              NOME *
-            </Text>
-
-            <TextInput
-              style={styles.input}
-              value={nomeEspaco}
-              onChangeText={setNomeEspaco}
-              placeholder="Ex.: Churrasqueira"
-              placeholderTextColor="#94A3B8"
-              editable={!salvandoEspaco}
-            />
-
-            <Text
-              style={styles.inputLabel}
-            >
-              DESCRIÃ‡ÃƒO
-            </Text>
-
-            <TextInput
-              style={[
-                styles.input,
-                styles.textArea,
-              ]}
-              value={descricaoEspaco}
-              onChangeText={
-                setDescricaoEspaco
+            <ScrollView
+              style={
+                styles.modalScroll
               }
-              placeholder="Ex.: Ãrea gourmet prÃ³xima Ã  piscina"
-              placeholderTextColor="#94A3B8"
-              multiline
-              editable={!salvandoEspaco}
-            />
-
-            <Text
-              style={styles.inputLabel}
-            >
-              CAPACIDADE
-            </Text>
-
-            <TextInput
-              style={styles.input}
-              value={capacidadeEspaco}
-              onChangeText={
-                setCapacidadeEspaco
+              contentContainerStyle={
+                styles.modalScrollContent
               }
-              placeholder="Ex.: 30"
-              placeholderTextColor="#94A3B8"
-              keyboardType="number-pad"
-              editable={!salvandoEspaco}
-            />
-
-            <View style={styles.formRow}>
-              <View
-                style={styles.formHalf}
-              >
-                <Text
+              showsVerticalScrollIndicator={
+                false
+              }
+              keyboardShouldPersistTaps="handled"
+            >
+              {erro ? (
+                <View
                   style={
-                    styles.inputLabel
+                    styles.modalError
                   }
                 >
-                  HORÃRIO INICIAL *
-                </Text>
+                  <Text
+                    style={
+                      styles.errorText
+                    }
+                  >
+                    {erro}
+                  </Text>
+                </View>
+              ) : null}
 
-                <TextInput
-                  style={styles.input}
-                  value={horaInicio}
-                  onChangeText={
-                    setHoraInicio
-                  }
-                  placeholder="08:00"
-                  placeholderTextColor="#94A3B8"
-                  maxLength={5}
-                  editable={
-                    !salvandoEspaco
-                  }
-                />
-              </View>
+              <Text
+                style={
+                  styles.inputLabel
+                }
+              >
+                NOME *
+              </Text>
+
+              <TextInput
+                style={styles.input}
+                value={nomeEspaco}
+                onChangeText={
+                  setNomeEspaco
+                }
+                placeholder="Ex.: Churrasqueira"
+                placeholderTextColor="#94A3B8"
+                editable={
+                  !salvandoEspaco
+                }
+              />
+
+              <Text
+                style={
+                  styles.inputLabel
+                }
+              >
+                DESCRIÇÃO
+              </Text>
+
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.textArea,
+                ]}
+                value={
+                  descricaoEspaco
+                }
+                onChangeText={
+                  setDescricaoEspaco
+                }
+                placeholder="Ex.: Área gourmet próxima à piscina"
+                placeholderTextColor="#94A3B8"
+                multiline
+                textAlignVertical="top"
+                editable={
+                  !salvandoEspaco
+                }
+              />
+
+              <Text
+                style={
+                  styles.inputLabel
+                }
+              >
+                CAPACIDADE
+              </Text>
+
+              <TextInput
+                style={styles.input}
+                value={
+                  capacidadeEspaco
+                }
+                onChangeText={
+                  setCapacidadeEspaco
+                }
+                placeholder="Ex.: 30"
+                placeholderTextColor="#94A3B8"
+                keyboardType="number-pad"
+                editable={
+                  !salvandoEspaco
+                }
+              />
 
               <View
-                style={styles.formHalf}
-              >
-                <Text
-                  style={
-                    styles.inputLabel
-                  }
-                >
-                  HORÃRIO FINAL *
-                </Text>
+                style={[
+                  styles.formRow,
 
-                <TextInput
-                  style={styles.input}
-                  value={horaFim}
-                  onChangeText={setHoraFim}
-                  placeholder="22:00"
-                  placeholderTextColor="#94A3B8"
-                  maxLength={5}
-                  editable={
-                    !salvandoEspaco
-                  }
-                />
+                  isMobile &&
+                    styles.formRowMobile,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.formHalf,
+
+                    isMobile &&
+                      styles.formHalfMobile,
+                  ]}
+                >
+                  <Text
+                    style={
+                      styles.inputLabel
+                    }
+                  >
+                    HORÁRIO INICIAL *
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={horaInicio}
+                    onChangeText={
+                      setHoraInicio
+                    }
+                    placeholder="08:00"
+                    placeholderTextColor="#94A3B8"
+                    maxLength={5}
+                    editable={
+                      !salvandoEspaco
+                    }
+                  />
+                </View>
+
+                <View
+                  style={[
+                    styles.formHalf,
+
+                    isMobile &&
+                      styles.formHalfMobile,
+                  ]}
+                >
+                  <Text
+                    style={
+                      styles.inputLabel
+                    }
+                  >
+                    HORÁRIO FINAL *
+                  </Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={horaFim}
+                    onChangeText={
+                      setHoraFim
+                    }
+                    placeholder="22:00"
+                    placeholderTextColor="#94A3B8"
+                    maxLength={5}
+                    editable={
+                      !salvandoEspaco
+                    }
+                  />
+                </View>
               </View>
-            </View>
+            </ScrollView>
 
             <View
-              style={styles.modalActions}
+              style={[
+                styles.modalActions,
+
+                isMobile &&
+                  styles.modalActionsMobile,
+              ]}
             >
               <Pressable
-                style={styles.cancelButton}
-                disabled={salvandoEspaco}
-                onPress={() =>
-                  setModalNovoEspaco(false)
+                style={({ pressed }) => [
+                  styles.cancelButton,
+
+                  isMobile &&
+                    styles.modalButtonMobile,
+
+                  pressed &&
+                    styles.pressed,
+                ]}
+                disabled={
+                  salvandoEspaco
+                }
+                onPress={
+                  fecharNovoEspaco
                 }
               >
                 <Text
@@ -1387,13 +2052,24 @@ export default function WebReservasScreen() {
               </Pressable>
 
               <Pressable
-                style={[
+                style={({ pressed }) => [
                   styles.saveButton,
+
+                  isMobile &&
+                    styles.modalButtonMobile,
+
                   salvandoEspaco &&
                     styles.disabled,
+
+                  pressed &&
+                    styles.pressed,
                 ]}
-                disabled={salvandoEspaco}
-                onPress={cadastrarEspaco}
+                disabled={
+                  salvandoEspaco
+                }
+                onPress={
+                  cadastrarEspaco
+                }
               >
                 {salvandoEspaco ? (
                   <ActivityIndicator
@@ -1414,43 +2090,14 @@ export default function WebReservasScreen() {
                 >
                   {salvandoEspaco
                     ? 'Salvando...'
-                    : 'Cadastrar espaÃ§o'}
+                    : 'Cadastrar espaço'}
                 </Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
-    </View>
-  );
-}
-
-function MenuItem({
-  label,
-  ativo = false,
-  onPress,
-}: {
-  label: string;
-  ativo?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      style={[
-        styles.menuItem,
-        ativo && styles.menuItemActive,
-      ]}
-      onPress={onPress}
-    >
-      <Text
-        style={[
-          styles.menuText,
-          ativo && styles.menuTextActive,
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
+    </WebLayout>
   );
 }
 
@@ -1459,19 +2106,34 @@ function SummaryCard({
   valor,
   icon,
   fundoIcone = colors.primaryLight,
+  responsive = false,
+  last = false,
 }: {
   titulo: string;
   valor: number;
   icon: React.ReactNode;
   fundoIcone?: string;
+  responsive?: boolean;
+  last?: boolean;
 }) {
   return (
-    <View style={styles.summaryCard}>
+    <View
+      style={[
+        styles.summaryCard,
+
+        last &&
+          styles.summaryCardLast,
+
+        responsive &&
+          styles.summaryCardResponsive,
+      ]}
+    >
       <View
         style={[
           styles.summaryIcon,
           {
-            backgroundColor: fundoIcone,
+            backgroundColor:
+              fundoIcone,
           },
         ]}
       >
@@ -1480,13 +2142,17 @@ function SummaryCard({
 
       <View>
         <Text
-          style={styles.summaryNumber}
+          style={
+            styles.summaryNumber
+          }
         >
           {valor}
         </Text>
 
         <Text
-          style={styles.summaryLabel}
+          style={
+            styles.summaryLabel
+          }
         >
           {titulo}
         </Text>
@@ -1496,108 +2162,29 @@ function SummaryCard({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: colors.background,
-  },
-
-  sidebar: {
-    width: 235,
-    backgroundColor: colors.primaryDark,
-    paddingHorizontal: 18,
-    paddingTop: 28,
-    paddingBottom: 22,
-    justifyContent: 'space-between',
-  },
-
-  brandArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  logoBox: {
-    width: 39,
-    height: 39,
-    borderRadius: 11,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-
-  logo: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-
-  logoSubtitle: {
-    color: '#94A3B8',
-    fontSize: 9,
-    marginTop: 2,
-  },
-
-  menu: {
-    marginTop: 36,
-  },
-
-  menuItem: {
-    minHeight: 44,
-    borderRadius: 11,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-    marginBottom: 6,
-  },
-
-  menuItemActive: {
-    backgroundColor: colors.primary,
-  },
-
-  menuText: {
-    color: '#CBD5E1',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  menuTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-
-  sidebarBottom: {
-    borderTopWidth: 1,
-    borderTopColor:
-      'rgba(255,255,255,0.10)',
-    paddingTop: 15,
-  },
-
-  sidebarBottomTitle: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
-
-  sidebarBottomText: {
-    color: '#94A3B8',
-    fontSize: 8,
-    marginTop: 3,
-  },
-
-  main: {
-    flex: 1,
-  },
-
-  mainContent: {
-    padding: 30,
-    paddingBottom: 50,
-  },
-
   header: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     marginBottom: 24,
+  },
+
+  headerMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+
+  headerText: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 20,
+  },
+
+  headerTextMobile: {
+    paddingRight: 0,
+    marginBottom: 15,
   },
 
   pageTitle: {
@@ -1606,15 +2193,31 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
+  pageTitleMobile: {
+    fontSize: 23,
+  },
+
   pageSubtitle: {
     color: colors.textSecondary,
     fontSize: 11,
+    lineHeight: 18,
     marginTop: 5,
   },
 
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
+  },
+
+  headerActionsMobile: {
+    width: '100%',
+    alignItems: 'stretch',
+  },
+
+  headerActionMobile: {
+    flex: 1,
+    minWidth: 0,
   },
 
   refreshButton: {
@@ -1623,9 +2226,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 11,
-    backgroundColor: colors.surface,
+    backgroundColor:
+      colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 10,
   },
 
@@ -1640,9 +2245,11 @@ const styles = StyleSheet.create({
     height: 42,
     paddingHorizontal: 16,
     borderRadius: 11,
-    backgroundColor: colors.primary,
+    backgroundColor:
+      colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
 
   newButtonText: {
@@ -1663,6 +2270,7 @@ const styles = StyleSheet.create({
     color: '#B91C1C',
     fontSize: 10,
     fontWeight: '600',
+    lineHeight: 16,
   },
 
   successBox: {
@@ -1679,14 +2287,21 @@ const styles = StyleSheet.create({
   },
 
   summaryRow: {
+    width: '100%',
     flexDirection: 'row',
     marginBottom: 22,
   },
 
+  summaryRowResponsive: {
+    flexDirection: 'column',
+  },
+
   summaryCard: {
     flex: 1,
+    minWidth: 0,
     minHeight: 105,
-    backgroundColor: colors.surface,
+    backgroundColor:
+      colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 15,
@@ -1694,6 +2309,18 @@ const styles = StyleSheet.create({
     marginRight: 12,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+
+  summaryCardLast: {
+    marginRight: 0,
+  },
+
+  summaryCardResponsive: {
+    width: '100%',
+    flex: 0,
+    minHeight: 86,
+    marginRight: 0,
+    marginBottom: 10,
   },
 
   summaryIcon: {
@@ -1718,22 +2345,42 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: colors.surface,
+    width: '100%',
+    minWidth: 0,
+    backgroundColor:
+      colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 17,
     padding: 20,
   },
 
+  cardMobile: {
+    padding: 14,
+    borderRadius: 14,
+  },
+
   reservasCard: {
     marginTop: 20,
+    marginBottom: 30,
   },
 
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     marginBottom: 18,
+  },
+
+  cardHeaderMobile: {
+    alignItems: 'flex-start',
+  },
+
+  cardHeaderText: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 10,
   },
 
   sectionTitle: {
@@ -1745,6 +2392,7 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     color: colors.textSecondary,
     fontSize: 9,
+    lineHeight: 15,
     marginTop: 3,
   },
 
@@ -1752,6 +2400,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 9,
     fontWeight: '700',
+    flexShrink: 0,
   },
 
   loading: {
@@ -1770,6 +2419,7 @@ const styles = StyleSheet.create({
     minHeight: 150,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 15,
   },
 
   emptyTitle: {
@@ -1777,17 +2427,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     marginTop: 9,
+    textAlign: 'center',
   },
 
   emptyText: {
     color: colors.textSecondary,
     fontSize: 9,
+    lineHeight: 15,
     marginTop: 4,
+    textAlign: 'center',
   },
 
   spaceGrid: {
+    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+
+  spaceGridMobile: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
   },
 
   spaceCard: {
@@ -1799,12 +2458,26 @@ const styles = StyleSheet.create({
     padding: 15,
     marginRight: 12,
     marginBottom: 12,
-    backgroundColor: colors.background,
+    backgroundColor:
+      colors.background,
+  },
+
+  spaceCardTablet: {
+    width: '100%',
+    marginRight: 0,
+  },
+
+  spaceCardMobile: {
+    width: '100%',
+    minHeight: 0,
+    marginRight: 0,
+    padding: 14,
   },
 
   spaceCardTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     alignItems: 'center',
   },
 
@@ -1812,14 +2485,15 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: colors.primaryLight,
+    backgroundColor:
+      colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   deleteIcon: {
-    width: 33,
-    height: 33,
+    width: 35,
+    height: 35,
     borderRadius: 9,
     backgroundColor: '#FEE2E2',
     alignItems: 'center',
@@ -1838,7 +2512,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 14,
     marginTop: 4,
-    minHeight: 28,
   },
 
   spaceInfo: {
@@ -1859,7 +2532,8 @@ const styles = StyleSheet.create({
 
   tableHeader: {
     height: 43,
-    backgroundColor: colors.background,
+    backgroundColor:
+      colors.background,
     borderRadius: 9,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1875,7 +2549,8 @@ const styles = StyleSheet.create({
   tableRow: {
     minHeight: 66,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor:
+      colors.border,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -1983,6 +2658,171 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  reservationCards: {
+    width: '100%',
+  },
+
+  reservationCard: {
+    width: '100%',
+    minWidth: 0,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    backgroundColor:
+      colors.background,
+    padding: 14,
+    marginBottom: 11,
+  },
+
+  reservationCardTop: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  reservationAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    backgroundColor:
+      colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    flexShrink: 0,
+  },
+
+  reservationTitleArea: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 8,
+  },
+
+  reservationResident: {
+    color: colors.text,
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '800',
+  },
+
+  reservationSpace: {
+    color: colors.textSecondary,
+    fontSize: 9,
+    marginTop: 3,
+  },
+
+  reservationInfoGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    marginTop: 14,
+  },
+
+  reservationInfo: {
+    flex: 1,
+    minWidth: 0,
+    backgroundColor:
+      colors.surface,
+    borderRadius: 9,
+    padding: 10,
+    marginRight: 7,
+  },
+
+  infoLabel: {
+    color: colors.textLight,
+    fontSize: 7,
+    fontWeight: '800',
+  },
+
+  infoValue: {
+    color: colors.text,
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+
+  observationBox: {
+    width: '100%',
+    borderRadius: 9,
+    backgroundColor:
+      colors.surface,
+    padding: 10,
+    marginTop: 9,
+  },
+
+  observationText: {
+    color: colors.textSecondary,
+    fontSize: 9,
+    lineHeight: 15,
+    marginTop: 4,
+  },
+
+  mobileActions: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+
+  mobileApproveButton: {
+    flex: 1,
+    minWidth: 0,
+    height: 38,
+    borderRadius: 9,
+    backgroundColor: '#16A34A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+
+  mobileApproveText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+    marginLeft: 5,
+  },
+
+  mobileRejectButton: {
+    flex: 1,
+    minWidth: 0,
+    height: 38,
+    borderRadius: 9,
+    backgroundColor: '#FEE2E2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+  },
+
+  mobileRejectText: {
+    color: '#B91C1C',
+    fontSize: 9,
+    fontWeight: '800',
+    marginLeft: 5,
+  },
+
+  mobileDeleteButton: {
+    flex: 1,
+    minWidth: 0,
+    height: 38,
+    borderRadius: 9,
+    backgroundColor: '#FEE2E2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  mobileDeleteButtonFull: {
+    flex: 1,
+  },
+
+  mobileDeleteText: {
+    color: '#DC2626',
+    fontSize: 9,
+    fontWeight: '800',
+    marginLeft: 5,
+  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor:
@@ -1992,19 +2832,44 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
+  modalOverlayMobile: {
+    padding: 10,
+  },
+
   modalCard: {
     width: '100%',
     maxWidth: 580,
-    backgroundColor: colors.surface,
+    height: '90%',
+    maxHeight: 650,
+    backgroundColor:
+      colors.surface,
     borderRadius: 18,
     padding: 22,
+    overflow: 'hidden',
+  },
+
+  modalCardMobile: {
+    width: '100%',
+    maxWidth: '100%',
+    height: '94%',
+    maxHeight: '94%',
+    borderRadius: 14,
+    padding: 14,
   },
 
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+    flexShrink: 0,
+  },
+
+  modalHeaderText: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 10,
   },
 
   modalLabel: {
@@ -2021,9 +2886,14 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
+  modalTitleMobile: {
+    fontSize: 18,
+  },
+
   modalSubtitle: {
     color: colors.textSecondary,
     fontSize: 9,
+    lineHeight: 15,
     marginTop: 3,
   },
 
@@ -2031,9 +2901,22 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
     borderRadius: 10,
-    backgroundColor: colors.background,
+    backgroundColor:
+      colors.background,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+  },
+
+  modalScroll: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
+  },
+
+  modalScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 12,
   },
 
   modalError: {
@@ -2052,34 +2935,61 @@ const styles = StyleSheet.create({
   },
 
   input: {
+    width: '100%',
     minHeight: 44,
-    backgroundColor: colors.background,
+    backgroundColor:
+      colors.background,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 11,
     paddingHorizontal: 12,
+    paddingVertical: 9,
     color: colors.text,
     fontSize: 11,
-  },
+    outlineStyle: 'none',
+  } as any,
 
   textArea: {
-    minHeight: 75,
+    minHeight: 82,
     paddingTop: 11,
     textAlignVertical: 'top',
   },
 
   formRow: {
+    width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
+  },
+
+  formRowMobile: {
+    flexDirection: 'column',
   },
 
   formHalf: {
     width: '48.5%',
   },
 
+  formHalfMobile: {
+    width: '100%',
+  },
+
   modalActions: {
+    width: '100%',
     flexDirection: 'row',
-    marginTop: 20,
+    alignItems: 'center',
+    flexShrink: 0,
+    paddingTop: 12,
+    marginTop: 5,
+    borderTopWidth: 1,
+    borderTopColor:
+      colors.border,
+  },
+
+  modalActionsMobile: {
+    flexDirection:
+      'column-reverse',
+    alignItems: 'stretch',
   },
 
   cancelButton: {
@@ -2103,7 +3013,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     borderRadius: 11,
-    backgroundColor: colors.primary,
+    backgroundColor:
+      colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2116,7 +3027,18 @@ const styles = StyleSheet.create({
     marginLeft: 7,
   },
 
+  modalButtonMobile: {
+    width: '100%',
+    flex: 0,
+    marginRight: 0,
+    marginBottom: 8,
+  },
+
   disabled: {
     opacity: 0.55,
+  },
+
+  pressed: {
+    opacity: 0.78,
   },
 });

@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import {
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 
 import WebMoradorSidebar from '../../../components/WebMoradorSidebar';
+import WebLayout from '../../../components/WebLayout';
 import { supabase } from '../../../services/supabase';
 
 type Horario = {
@@ -28,9 +29,18 @@ type Horario = {
 };
 
 export default function WebMoradorHorariosScreen() {
-  const [horarios, setHorarios] = useState<Horario[]>([]);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const { width } = useWindowDimensions();
+
+  const isMobile = width < 768;
+
+  const [horarios, setHorarios] =
+    useState<Horario[]>([]);
+
+  const [carregando, setCarregando] =
+    useState(true);
+
+  const [erro, setErro] =
+    useState('');
 
   useEffect(() => {
     carregarHorarios();
@@ -41,52 +51,77 @@ export default function WebMoradorHorariosScreen() {
       setCarregando(true);
       setErro('');
 
-      const { data, error } = await supabase
-        .from('horarios')
-        .select(`
-          id,
-          titulo,
-          dias,
-          horario_inicio,
-          horario_fim,
-          observacao
-        `)
-        .eq('ativo', true)
-        .order('criado_em', {
-          ascending: false,
-        });
+      const { data, error } =
+        await supabase
+          .from('horarios')
+          .select(`
+            id,
+            titulo,
+            dias,
+            horario_inicio,
+            horario_fim,
+            observacao
+          `)
+          .eq('ativo', true)
+          .order('criado_em', {
+            ascending: false,
+          });
 
       if (error) {
-        console.error('Erro ao buscar horários:', error);
+        console.error(
+          'Erro ao buscar horários:',
+          error
+        );
 
         setHorarios([]);
         setErro(error.message);
+
         return;
       }
 
-      console.log('HORÁRIOS DO SUPABASE:', data);
+      console.log(
+        'HORÁRIOS DO SUPABASE:',
+        data
+      );
 
-      setHorarios((data ?? []) as Horario[]);
+      setHorarios(
+        (data ?? []) as Horario[]
+      );
     } catch (error) {
       console.error(error);
 
       setHorarios([]);
-      setErro('Não foi possível carregar os horários.');
+
+      setErro(
+        'Não foi possível carregar os horários.'
+      );
     } finally {
       setCarregando(false);
     }
   }
 
   return (
-    <View style={styles.container}>
-      <WebMoradorSidebar active="horarios" />
+    <WebLayout
+      sidebar={
+        <WebMoradorSidebar active="horarios" />
+      }
+    >
+      <View style={styles.page}>
+        {/* CABEÇALHO */}
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-      >
-        <View style={styles.header}>
-          <View>
+        <View
+          style={[
+            styles.header,
+            isMobile && styles.headerMobile,
+          ]}
+        >
+          <View
+            style={
+              isMobile
+                ? styles.headerTextMobile
+                : undefined
+            }
+          >
             <Text style={styles.title}>
               Horários
             </Text>
@@ -97,7 +132,11 @@ export default function WebMoradorHorariosScreen() {
           </View>
 
           <Pressable
-            style={styles.refreshButton}
+            style={[
+              styles.refreshButton,
+              isMobile &&
+                styles.refreshButtonMobile,
+            ]}
             onPress={carregarHorarios}
           >
             <RefreshCw
@@ -111,6 +150,8 @@ export default function WebMoradorHorariosScreen() {
           </Pressable>
         </View>
 
+        {/* CARREGANDO */}
+
         {carregando ? (
           <View style={styles.center}>
             <ActivityIndicator
@@ -123,6 +164,8 @@ export default function WebMoradorHorariosScreen() {
             </Text>
           </View>
         ) : erro ? (
+          /* ERRO */
+
           <View style={styles.errorBox}>
             <Text style={styles.errorTitle}>
               Não foi possível carregar
@@ -136,12 +179,16 @@ export default function WebMoradorHorariosScreen() {
               style={styles.tryButton}
               onPress={carregarHorarios}
             >
-              <Text style={styles.tryButtonText}>
+              <Text
+                style={styles.tryButtonText}
+              >
                 Tentar novamente
               </Text>
             </Pressable>
           </View>
         ) : horarios.length === 0 ? (
+          /* VAZIO */
+
           <View style={styles.emptyBox}>
             <Clock3
               size={42}
@@ -158,12 +205,24 @@ export default function WebMoradorHorariosScreen() {
             </Text>
           </View>
         ) : (
-          <View style={styles.grid}>
+          /* CARDS */
+
+          <View
+            style={[
+              styles.grid,
+              isMobile && styles.gridMobile,
+            ]}
+          >
             {horarios.map((horario) => (
               <View
                 key={horario.id}
-                style={styles.card}
+                style={[
+                  styles.card,
+                  isMobile && styles.cardMobile,
+                ]}
               >
+                {/* TOPO DO CARD */}
+
                 <View style={styles.cardHeader}>
                   <View style={styles.iconBox}>
                     <Clock3
@@ -173,17 +232,25 @@ export default function WebMoradorHorariosScreen() {
                   </View>
 
                   <View style={styles.activeBadge}>
-                    <View style={styles.activeDot} />
+                    <View
+                      style={styles.activeDot}
+                    />
 
-                    <Text style={styles.activeText}>
+                    <Text
+                      style={styles.activeText}
+                    >
                       Ativo
                     </Text>
                   </View>
                 </View>
 
+                {/* TÍTULO */}
+
                 <Text style={styles.cardTitle}>
                   {horario.titulo}
                 </Text>
+
+                {/* DIAS */}
 
                 <View style={styles.infoRow}>
                   <CalendarDays
@@ -196,9 +263,21 @@ export default function WebMoradorHorariosScreen() {
                   </Text>
                 </View>
 
-                <View style={styles.timeArea}>
-                  <View>
-                    <Text style={styles.timeLabel}>
+                {/* HORÁRIO */}
+
+                <View
+                  style={[
+                    styles.timeArea,
+                    isMobile &&
+                      styles.timeAreaMobile,
+                  ]}
+                >
+                  <View
+                    style={styles.timeBlock}
+                  >
+                    <Text
+                      style={styles.timeLabel}
+                    >
                       Início
                     </Text>
 
@@ -211,8 +290,15 @@ export default function WebMoradorHorariosScreen() {
                     até
                   </Text>
 
-                  <View>
-                    <Text style={styles.timeLabel}>
+                  <View
+                    style={[
+                      styles.timeBlock,
+                      styles.timeBlockEnd,
+                    ]}
+                  >
+                    <Text
+                      style={styles.timeLabel}
+                    >
                       Fim
                     </Text>
 
@@ -222,9 +308,17 @@ export default function WebMoradorHorariosScreen() {
                   </View>
                 </View>
 
+                {/* OBSERVAÇÃO */}
+
                 {horario.observacao ? (
-                  <View style={styles.observation}>
-                    <Text style={styles.observationText}>
+                  <View
+                    style={styles.observation}
+                  >
+                    <Text
+                      style={
+                        styles.observationText
+                      }
+                    >
                       {horario.observacao}
                     </Text>
                   </View>
@@ -233,25 +327,16 @@ export default function WebMoradorHorariosScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
-    </View>
+      </View>
+    </WebLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  page: {
     flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#F5F7FB',
-  },
-
-  content: {
-    flex: 1,
-  },
-
-  contentContainer: {
-    padding: 30,
-    paddingBottom: 60,
+    width: '100%',
+    minWidth: 0,
   },
 
   header: {
@@ -259,6 +344,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 25,
+  },
+
+  headerMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    marginBottom: 20,
+  },
+
+  headerTextMobile: {
+    width: '100%',
   },
 
   title: {
@@ -270,6 +365,7 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 5,
     fontSize: 12,
+    lineHeight: 18,
     color: '#64748B',
   },
 
@@ -282,6 +378,12 @@ const styles = StyleSheet.create({
     borderColor: '#DCE2EA',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  refreshButtonMobile: {
+    width: '100%',
+    marginTop: 14,
   },
 
   refreshText: {
@@ -304,9 +406,16 @@ const styles = StyleSheet.create({
   },
 
   grid: {
+    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -7,
+  },
+
+  gridMobile: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
+    marginHorizontal: 0,
   },
 
   card: {
@@ -318,6 +427,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E1E6ED',
+  },
+
+  cardMobile: {
+    width: '100%',
+    minHeight: 0,
+    margin: 0,
+    marginBottom: 14,
+    padding: 17,
   },
 
   cardHeader: {
@@ -372,8 +489,11 @@ const styles = StyleSheet.create({
   },
 
   infoText: {
+    flex: 1,
+    minWidth: 0,
     marginLeft: 8,
     fontSize: 11,
+    lineHeight: 17,
     color: '#64748B',
     fontWeight: '600',
   },
@@ -386,6 +506,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+
+  timeAreaMobile: {
+    width: '100%',
+    paddingHorizontal: 12,
+  },
+
+  timeBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  timeBlockEnd: {
+    alignItems: 'flex-end',
   },
 
   timeLabel: {
@@ -404,6 +538,7 @@ const styles = StyleSheet.create({
   ate: {
     color: '#94A3B8',
     fontSize: 9,
+    marginHorizontal: 12,
   },
 
   observation: {
@@ -420,6 +555,7 @@ const styles = StyleSheet.create({
   },
 
   emptyBox: {
+    width: '100%',
     minHeight: 350,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -435,16 +571,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#172033',
+    textAlign: 'center',
   },
 
   emptyText: {
     marginTop: 7,
     fontSize: 11,
+    lineHeight: 17,
     color: '#64748B',
     textAlign: 'center',
   },
 
   errorBox: {
+    width: '100%',
     minHeight: 300,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
@@ -459,11 +598,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: '#172033',
+    textAlign: 'center',
   },
 
   errorText: {
     marginTop: 8,
     fontSize: 11,
+    lineHeight: 17,
     color: '#DC2626',
     textAlign: 'center',
   },

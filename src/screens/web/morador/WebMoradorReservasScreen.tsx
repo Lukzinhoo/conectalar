@@ -8,11 +8,11 @@ import React, {
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import {
@@ -29,6 +29,7 @@ import {
 
 import { colors } from '../../../theme/theme';
 import WebMoradorSidebar from '../../../components/WebMoradorSidebar';
+import WebLayout from '../../../components/WebLayout';
 import { supabase } from '../../../services/supabase';
 
 type StatusReserva =
@@ -103,7 +104,9 @@ function dataLocalParaBanco(
   mes: number,
   dia: number
 ) {
-  return `${ano}-${doisDigitos(mes + 1)}-${doisDigitos(dia)}`;
+  return `${ano}-${doisDigitos(
+    mes + 1
+  )}-${doisDigitos(dia)}`;
 }
 
 function formatarData(data: string) {
@@ -118,10 +121,22 @@ function formatarData(data: string) {
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
-function limparHorario(valor: string | null) {
+function limparHorario(
+  valor: string | null
+) {
   if (!valor) return '';
 
   return valor.substring(0, 5);
+}
+
+function hojeBanco() {
+  const hoje = new Date();
+
+  return dataLocalParaBanco(
+    hoje.getFullYear(),
+    hoje.getMonth(),
+    hoje.getDate()
+  );
 }
 
 function statusTexto(status: StatusReserva) {
@@ -140,17 +155,11 @@ function statusTexto(status: StatusReserva) {
   }
 }
 
-function hojeBanco() {
-  const hoje = new Date();
-
-  return dataLocalParaBanco(
-    hoje.getFullYear(),
-    hoje.getMonth(),
-    hoje.getDate()
-  );
-}
-
 export default function WebMoradorReservasScreen() {
+  const { width } = useWindowDimensions();
+
+  const isMobile = width < 768;
+
   const hoje = useMemo(
     () => new Date(),
     []
@@ -165,287 +174,288 @@ export default function WebMoradorReservasScreen() {
   const [ocupacoes, setOcupacoes] =
     useState<OcupacaoCalendario[]>([]);
 
-  const [espacoSelecionadoId, setEspacoSelecionadoId] =
-    useState('');
+  const [
+    espacoSelecionadoId,
+    setEspacoSelecionadoId,
+  ] = useState('');
 
-  const [dataSelecionada, setDataSelecionada] =
-    useState('');
+  const [
+    dataSelecionada,
+    setDataSelecionada,
+  ] = useState('');
 
-  const [mesAtual, setMesAtual] =
-    useState(
-      new Date(
-        hoje.getFullYear(),
-        hoje.getMonth(),
-        1
-      )
-    );
-
-  const [observacao, setObservacao] =
-    useState('');
-
-  const [carregando, setCarregando] =
-    useState(true);
-
-  const [salvando, setSalvando] =
-    useState(false);
-
-  const [erro, setErro] =
-    useState('');
-
-  const [sucesso, setSucesso] =
-    useState('');
-
-  const carregarDados = useCallback(
-    async (
-      mostrarCarregamento = true
-    ) => {
-      try {
-        if (mostrarCarregamento) {
-          setCarregando(true);
-        }
-
-        setErro('');
-
-        const {
-          data: userData,
-          error: userError,
-        } =
-          await supabase.auth.getUser();
-
-        if (
-          userError ||
-          !userData.user
-        ) {
-          setErro(
-            'Não foi possível identificar o morador conectado.'
-          );
-          return;
-        }
-
-        const usuario =
-          userData.user;
-
-        const {
-          data: perfil,
-          error: perfilError,
-        } = await supabase
-          .from('perfis')
-          .select(
-            'id, tipo, ativo'
-          )
-          .eq(
-            'id',
-            usuario.id
-          )
-          .maybeSingle();
-
-        if (
-          perfilError ||
-          !perfil
-        ) {
-          setErro(
-            'Não foi possível verificar seu perfil.'
-          );
-          return;
-        }
-
-        if (
-          perfil.tipo !==
-            'morador' ||
-          !perfil.ativo
-        ) {
-          setErro(
-            'Seu perfil não possui acesso às reservas.'
-          );
-          return;
-        }
-
-        // ESPAÇOS
-
-        const {
-          data: espacosData,
-          error: espacosError,
-        } = await supabase
-          .from(
-            'espacos_reserva'
-          )
-          .select(`
-            id,
-            nome,
-            descricao,
-            capacidade,
-            horario_inicio,
-            horario_fim,
-            ativo
-          `)
-          .eq('ativo', true)
-          .order('nome', {
-            ascending: true,
-          });
-
-        if (espacosError) {
-          setErro(
-            `Não foi possível carregar os espaços: ${espacosError.message}`
-          );
-          return;
-        }
-
-        const listaEspacos =
-          (espacosData ??
-            []) as Espaco[];
-
-        setEspacos(
-          listaEspacos
-        );
-
-        setEspacoSelecionadoId(
-          (atual) => {
-            if (
-              atual &&
-              listaEspacos.some(
-                (item) =>
-                  item.id ===
-                  atual
-              )
-            ) {
-              return atual;
-            }
-
-            return (
-              listaEspacos[0]
-                ?.id ?? ''
-            );
-          }
-        );
-
-        // MINHAS RESERVAS
-
-        const {
-          data: minhasData,
-          error: minhasError,
-        } = await supabase
-          .from('reservas')
-          .select(`
-            id,
-            morador_id,
-            espaco_id,
-            data,
-            horario_inicio,
-            horario_fim,
-            observacao,
-            status,
-            criado_em
-          `)
-          .eq(
-            'morador_id',
-            usuario.id
-          )
-          .order(
-            'criado_em',
-            {
-              ascending: false,
-            }
-          );
-
-        if (minhasError) {
-          setErro(
-            `Não foi possível carregar suas reservas: ${minhasError.message}`
-          );
-          return;
-        }
-
-        const mapaEspacos =
-          new Map(
-            listaEspacos.map(
-              (item) => [
-                item.id,
-                item.nome,
-              ]
-            )
-          );
-
-        const listaReservas: ReservaTela[] =
-          (
-            (minhasData ??
-              []) as ReservaBanco[]
-          ).map(
-            (reserva) => ({
-              ...reserva,
-
-              espaco:
-                mapaEspacos.get(
-                  reserva.espaco_id
-                ) ??
-                'Espaço não encontrado',
-            })
-          );
-
-        setReservas(
-          listaReservas
-        );
-
-        // DATAS OCUPADAS DE TODOS OS MORADORES
-        //
-        // Não buscamos observação nem dados
-        // pessoais. Só o necessário para
-        // desenhar o calendário.
-
-        const {
-          data: ocupacoesData,
-          error:
-            ocupacoesError,
-        } = await supabase
-          .from('reservas')
-          .select(`
-            espaco_id,
-            data,
-            status
-          `)
-          .in('status', [
-            'pendente',
-            'aprovada',
-          ]);
-
-        if (
-          ocupacoesError
-        ) {
-          console.error(
-            'Erro ao carregar disponibilidade:',
-            ocupacoesError
-          );
-
-          setErro(
-            `Não foi possível carregar a disponibilidade do calendário: ${ocupacoesError.message}`
-          );
-
-          return;
-        }
-
-        setOcupacoes(
-          (ocupacoesData ??
-            []) as OcupacaoCalendario[]
-        );
-      } catch (error) {
-        console.error(
-          'Erro ao carregar reservas:',
-          error
-        );
-
-        setErro(
-          'Ocorreu um erro ao carregar as reservas.'
-        );
-      } finally {
-        if (
-          mostrarCarregamento
-        ) {
-          setCarregando(
-            false
-          );
-        }
-      }
-    },
-    []
+  const [
+    mesAtual,
+    setMesAtual,
+  ] = useState(
+    new Date(
+      hoje.getFullYear(),
+      hoje.getMonth(),
+      1
+    )
   );
+
+  const [
+    observacao,
+    setObservacao,
+  ] = useState('');
+
+  const [
+    carregando,
+    setCarregando,
+  ] = useState(true);
+
+  const [
+    salvando,
+    setSalvando,
+  ] = useState(false);
+
+  const [
+    erro,
+    setErro,
+  ] = useState('');
+
+  const [
+    sucesso,
+    setSucesso,
+  ] = useState('');
+
+  const carregarDados =
+    useCallback(
+      async (
+        mostrarCarregamento = true
+      ) => {
+        try {
+          if (mostrarCarregamento) {
+            setCarregando(true);
+          }
+
+          setErro('');
+
+          const {
+            data: userData,
+            error: userError,
+          } =
+            await supabase.auth.getUser();
+
+          if (
+            userError ||
+            !userData.user
+          ) {
+            setErro(
+              'Não foi possível identificar o morador conectado.'
+            );
+
+            return;
+          }
+
+          const usuario =
+            userData.user;
+
+          const {
+            data: perfil,
+            error: perfilError,
+          } = await supabase
+            .from('perfis')
+            .select(
+              'id, tipo, ativo'
+            )
+            .eq(
+              'id',
+              usuario.id
+            )
+            .maybeSingle();
+
+          if (
+            perfilError ||
+            !perfil
+          ) {
+            setErro(
+              'Não foi possível verificar seu perfil.'
+            );
+
+            return;
+          }
+
+          if (
+            perfil.tipo !== 'morador' ||
+            !perfil.ativo
+          ) {
+            setErro(
+              'Seu perfil não possui acesso às reservas.'
+            );
+
+            return;
+          }
+
+          const {
+            data: espacosData,
+            error: espacosError,
+          } = await supabase
+            .from('espacos_reserva')
+            .select(`
+              id,
+              nome,
+              descricao,
+              capacidade,
+              horario_inicio,
+              horario_fim,
+              ativo
+            `)
+            .eq('ativo', true)
+            .order(
+              'nome',
+              {
+                ascending: true,
+              }
+            );
+
+          if (espacosError) {
+            setErro(
+              `Não foi possível carregar os espaços: ${espacosError.message}`
+            );
+
+            return;
+          }
+
+          const listaEspacos =
+            (espacosData ?? []) as Espaco[];
+
+          setEspacos(listaEspacos);
+
+          setEspacoSelecionadoId(
+            (atual) => {
+              if (
+                atual &&
+                listaEspacos.some(
+                  (item) =>
+                    item.id === atual
+                )
+              ) {
+                return atual;
+              }
+
+              return (
+                listaEspacos[0]?.id ??
+                ''
+              );
+            }
+          );
+
+          const {
+            data: minhasData,
+            error: minhasError,
+          } = await supabase
+            .from('reservas')
+            .select(`
+              id,
+              morador_id,
+              espaco_id,
+              data,
+              horario_inicio,
+              horario_fim,
+              observacao,
+              status,
+              criado_em
+            `)
+            .eq(
+              'morador_id',
+              usuario.id
+            )
+            .order(
+              'criado_em',
+              {
+                ascending: false,
+              }
+            );
+
+          if (minhasError) {
+            setErro(
+              `Não foi possível carregar suas reservas: ${minhasError.message}`
+            );
+
+            return;
+          }
+
+          const mapaEspacos =
+            new Map(
+              listaEspacos.map(
+                (item) => [
+                  item.id,
+                  item.nome,
+                ]
+              )
+            );
+
+          const listaReservas =
+            (
+              (minhasData ??
+                []) as ReservaBanco[]
+            ).map(
+              (reserva) => ({
+                ...reserva,
+
+                espaco:
+                  mapaEspacos.get(
+                    reserva.espaco_id
+                  ) ??
+                  'Espaço não encontrado',
+              })
+            );
+
+          setReservas(
+            listaReservas
+          );
+
+          const {
+            data: ocupacoesData,
+            error: ocupacoesError,
+          } = await supabase
+            .from('reservas')
+            .select(`
+              espaco_id,
+              data,
+              status
+            `)
+            .in(
+              'status',
+              [
+                'pendente',
+                'aprovada',
+              ]
+            );
+
+          if (ocupacoesError) {
+            setErro(
+              `Não foi possível carregar a disponibilidade: ${ocupacoesError.message}`
+            );
+
+            return;
+          }
+
+          setOcupacoes(
+            (ocupacoesData ??
+              []) as OcupacaoCalendario[]
+          );
+        } catch (error) {
+          console.error(
+            'Erro ao carregar reservas:',
+            error
+          );
+
+          setErro(
+            'Ocorreu um erro ao carregar as reservas.'
+          );
+        } finally {
+          if (
+            mostrarCarregamento
+          ) {
+            setCarregando(false);
+          }
+        }
+      },
+      []
+    );
 
   useEffect(() => {
     carregarDados();
@@ -493,17 +503,16 @@ export default function WebMoradorReservasScreen() {
     | 'livre'
     | 'pendente'
     | 'aprovada' {
-    const reservasData =
+    const encontrados =
       ocupacoes.filter(
         (item) =>
           item.espaco_id ===
             espacoSelecionadoId &&
-          item.data ===
-            dataBanco
+          item.data === dataBanco
       );
 
     if (
-      reservasData.some(
+      encontrados.some(
         (item) =>
           item.status ===
           'aprovada'
@@ -513,7 +522,7 @@ export default function WebMoradorReservasScreen() {
     }
 
     if (
-      reservasData.some(
+      encontrados.some(
         (item) =>
           item.status ===
           'pendente'
@@ -532,8 +541,7 @@ export default function WebMoradorReservasScreen() {
       (atual) =>
         new Date(
           atual.getFullYear(),
-          atual.getMonth() -
-            1,
+          atual.getMonth() - 1,
           1
         )
     );
@@ -546,8 +554,7 @@ export default function WebMoradorReservasScreen() {
       (atual) =>
         new Date(
           atual.getFullYear(),
-          atual.getMonth() +
-            1,
+          atual.getMonth() + 1,
           1
         )
     );
@@ -556,10 +563,7 @@ export default function WebMoradorReservasScreen() {
   function selecionarEspaco(
     id: string
   ) {
-    setEspacoSelecionadoId(
-      id
-    );
-
+    setEspacoSelecionadoId(id);
     setDataSelecionada('');
     setObservacao('');
     setErro('');
@@ -577,19 +581,15 @@ export default function WebMoradorReservasScreen() {
       );
 
     if (
-      dataBanco <
-      hojeBanco()
+      dataBanco < hojeBanco()
     ) {
       return;
     }
 
-    const status =
+    if (
       obterStatusData(
         dataBanco
-      );
-
-    if (
-      status !== 'livre'
+      ) !== 'livre'
     ) {
       return;
     }
@@ -624,9 +624,8 @@ export default function WebMoradorReservasScreen() {
           0
         ).getDate();
 
-      const itens: Array<
-        number | null
-      > = [];
+      const itens:
+        Array<number | null> = [];
 
       for (
         let i = 0;
@@ -645,8 +644,7 @@ export default function WebMoradorReservasScreen() {
       }
 
       while (
-        itens.length % 7 !==
-        0
+        itens.length % 7 !== 0
       ) {
         itens.push(null);
       }
@@ -655,9 +653,7 @@ export default function WebMoradorReservasScreen() {
     }, [mesAtual]);
 
   async function solicitarReserva() {
-    if (salvando) {
-      return;
-    }
+    if (salvando) return;
 
     try {
       setErro('');
@@ -669,6 +665,7 @@ export default function WebMoradorReservasScreen() {
         setErro(
           'Selecione um espaço.'
         );
+
         return;
       }
 
@@ -678,17 +675,20 @@ export default function WebMoradorReservasScreen() {
         setErro(
           'Selecione uma data livre no calendário.'
         );
+
         return;
       }
 
       const horaInicio =
         limparHorario(
-          espacoSelecionado.horario_inicio
+          espacoSelecionado
+            .horario_inicio
         );
 
       const horaFim =
         limparHorario(
-          espacoSelecionado.horario_fim
+          espacoSelecionado
+            .horario_fim
         );
 
       if (
@@ -698,6 +698,7 @@ export default function WebMoradorReservasScreen() {
         setErro(
           'A administração ainda não cadastrou o horário deste espaço.'
         );
+
         return;
       }
 
@@ -716,13 +717,9 @@ export default function WebMoradorReservasScreen() {
         setErro(
           'Sua sessão expirou. Entre novamente.'
         );
+
         return;
       }
-
-      // Confere novamente antes de salvar.
-      // Isso evita usar disponibilidade antiga
-      // caso outra pessoa tenha solicitado
-      // enquanto esta tela estava aberta.
 
       const {
         data: conflito,
@@ -740,18 +737,20 @@ export default function WebMoradorReservasScreen() {
           'data',
           dataSelecionada
         )
-        .in('status', [
-          'pendente',
-          'aprovada',
-        ])
+        .in(
+          'status',
+          [
+            'pendente',
+            'aprovada',
+          ]
+        )
         .limit(1);
 
-      if (
-        conflitoError
-      ) {
+      if (conflitoError) {
         setErro(
           `Não foi possível confirmar a disponibilidade: ${conflitoError.message}`
         );
+
         return;
       }
 
@@ -799,14 +798,6 @@ export default function WebMoradorReservasScreen() {
         });
 
       if (insertError) {
-        /*
-         * O índice único que criamos no
-         * Supabase é a proteção final.
-         *
-         * Se duas pessoas clicarem quase
-         * ao mesmo tempo, somente uma
-         * conseguirá reservar.
-         */
         if (
           insertError.code ===
           '23505'
@@ -835,15 +826,10 @@ export default function WebMoradorReservasScreen() {
         )} solicitada com sucesso. Aguarde a aprovação da administração.`
       );
 
-      setDataSelecionada(
-        ''
-      );
-
+      setDataSelecionada('');
       setObservacao('');
 
-      await carregarDados(
-        false
-      );
+      await carregarDados(false);
     } catch (error) {
       console.error(
         'Erro ao solicitar reserva:',
@@ -859,39 +845,37 @@ export default function WebMoradorReservasScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <WebMoradorSidebar
-        active="reservas"
-      />
-
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={
-          styles.contentContainer
-        }
-        showsVerticalScrollIndicator={
-          false
-        }
-      >
-        {/* CABEÇALHO */}
-
-        <View style={styles.header}>
-          <View>
+    <WebLayout
+      sidebar={
+        <WebMoradorSidebar
+          active="reservas"
+        />
+      }
+    >
+      <View style={styles.page}>
+        <View
+          style={[
+            styles.header,
+            isMobile &&
+              styles.headerMobile,
+          ]}
+        >
+          <View style={styles.headerText}>
             <Text style={styles.title}>
               Reservas
             </Text>
 
-            <Text
-              style={styles.subtitle}
-            >
+            <Text style={styles.subtitle}>
               Escolha o espaço e uma data disponível no calendário.
             </Text>
           </View>
 
           <Pressable
-            style={
-              styles.refreshButton
-            }
+            style={[
+              styles.refreshButton,
+              isMobile &&
+                styles.refreshButtonMobile,
+            ]}
             onPress={() =>
               carregarDados()
             }
@@ -914,19 +898,13 @@ export default function WebMoradorReservasScreen() {
         </View>
 
         {!!erro && (
-          <View
-            style={styles.errorBox}
-          >
+          <View style={styles.errorBox}>
             <XCircle
               size={17}
-              color={
-                colors.danger
-              }
+              color={colors.danger}
             />
 
-            <Text
-              style={styles.errorText}
-            >
+            <Text style={styles.errorText}>
               {erro}
             </Text>
           </View>
@@ -961,9 +939,7 @@ export default function WebMoradorReservasScreen() {
           >
             <ActivityIndicator
               size="large"
-              color={
-                colors.primary
-              }
+              color={colors.primary}
             />
 
             <Text
@@ -976,16 +952,17 @@ export default function WebMoradorReservasScreen() {
           </View>
         ) : (
           <>
-            {/* RESUMO */}
-
             <View
-              style={styles.summary}
+              style={[
+                styles.summary,
+                isMobile &&
+                  styles.summaryMobile,
+              ]}
             >
               <SummaryCard
                 titulo="Minhas reservas"
-                valor={
-                  reservas.length
-                }
+                valor={reservas.length}
+                mobile={isMobile}
                 icon={
                   <CalendarDays
                     size={21}
@@ -1001,6 +978,7 @@ export default function WebMoradorReservasScreen() {
                 valor={
                   totalAprovadas
                 }
+                mobile={isMobile}
                 icon={
                   <CheckCircle2
                     size={21}
@@ -1016,6 +994,8 @@ export default function WebMoradorReservasScreen() {
                 valor={
                   totalPendentes
                 }
+                mobile={isMobile}
+                ultimo
                 icon={
                   <Clock3
                     size={21}
@@ -1024,11 +1004,8 @@ export default function WebMoradorReservasScreen() {
                     }
                   />
                 }
-                ultimo
               />
             </View>
-
-            {/* ESPAÇOS */}
 
             <Text
               style={
@@ -1038,13 +1015,8 @@ export default function WebMoradorReservasScreen() {
               Escolha o espaço
             </Text>
 
-            {espacos.length ===
-            0 ? (
-              <View
-                style={
-                  styles.emptyBox
-                }
-              >
+            {espacos.length === 0 ? (
+              <View style={styles.emptyBox}>
                 <MapPin
                   size={35}
                   color={
@@ -1062,9 +1034,11 @@ export default function WebMoradorReservasScreen() {
               </View>
             ) : (
               <View
-                style={
-                  styles.spaces
-                }
+                style={[
+                  styles.spaces,
+                  isMobile &&
+                    styles.spacesMobile,
+                ]}
               >
                 {espacos.map(
                   (espaco) => {
@@ -1074,12 +1048,11 @@ export default function WebMoradorReservasScreen() {
 
                     return (
                       <Pressable
-                        key={
-                          espaco.id
-                        }
+                        key={espaco.id}
                         style={[
                           styles.spaceCard,
-
+                          isMobile &&
+                            styles.spaceCardMobile,
                           ativo &&
                             styles.spaceCardActive,
                         ]}
@@ -1112,9 +1085,7 @@ export default function WebMoradorReservasScreen() {
                               styles.spaceTitle
                             }
                           >
-                            {
-                              espaco.nome
-                            }
+                            {espaco.nome}
                           </Text>
 
                           <Text
@@ -1196,16 +1167,18 @@ export default function WebMoradorReservasScreen() {
                 </Text>
 
                 <View
-                  style={
-                    styles.bookingArea
-                  }
+                  style={[
+                    styles.bookingArea,
+                    isMobile &&
+                      styles.bookingAreaMobile,
+                  ]}
                 >
-                  {/* CALENDÁRIO */}
-
                   <View
-                    style={
-                      styles.calendarCard
-                    }
+                    style={[
+                      styles.calendarCard,
+                      isMobile &&
+                        styles.calendarCardMobile,
+                    ]}
                   >
                     <View
                       style={
@@ -1279,9 +1252,7 @@ export default function WebMoradorReservasScreen() {
                       {DIAS_SEMANA.map(
                         (dia) => (
                           <View
-                            key={
-                              dia
-                            }
+                            key={dia}
                             style={
                               styles.weekCell
                             }
@@ -1291,7 +1262,12 @@ export default function WebMoradorReservasScreen() {
                                 styles.weekText
                               }
                             >
-                              {dia}
+                              {isMobile
+                                ? dia.substring(
+                                    0,
+                                    1
+                                  )
+                                : dia}
                             </Text>
                           </View>
                         )
@@ -1309,8 +1285,7 @@ export default function WebMoradorReservasScreen() {
                           index
                         ) => {
                           if (
-                            dia ===
-                            null
+                            dia === null
                           ) {
                             return (
                               <View
@@ -1348,59 +1323,64 @@ export default function WebMoradorReservasScreen() {
                               'livre';
 
                           return (
-                            <Pressable
+                            <View
                               key={
                                 dataBanco
                               }
-                              style={[
-                                styles.dayCell,
-                                styles.dayButton,
-
-                                passado &&
-                                  styles.dayPast,
-
-                                status ===
-                                  'pendente' &&
-                                  styles.dayPending,
-
-                                status ===
-                                  'aprovada' &&
-                                  styles.dayApproved,
-
-                                selecionado &&
-                                  styles.daySelected,
-                              ]}
-                              disabled={
-                                bloqueado
-                              }
-                              onPress={() =>
-                                selecionarDia(
-                                  dia
-                                )
+                              style={
+                                styles.dayCell
                               }
                             >
-                              <Text
+                              <Pressable
+                                disabled={
+                                  bloqueado
+                                }
+                                onPress={() =>
+                                  selecionarDia(
+                                    dia
+                                  )
+                                }
                                 style={[
-                                  styles.dayText,
+                                  styles.dayButton,
 
                                   passado &&
-                                    styles.dayPastText,
+                                    styles.dayPast,
 
                                   status ===
                                     'pendente' &&
-                                    styles.dayPendingText,
+                                    styles.dayPending,
 
                                   status ===
                                     'aprovada' &&
-                                    styles.dayApprovedText,
+                                    styles.dayApproved,
 
                                   selecionado &&
-                                    styles.daySelectedText,
+                                    styles.daySelected,
                                 ]}
                               >
-                                {dia}
-                              </Text>
-                            </Pressable>
+                                <Text
+                                  style={[
+                                    styles.dayText,
+
+                                    passado &&
+                                      styles.dayPastText,
+
+                                    status ===
+                                      'pendente' &&
+                                      styles.dayPendingText,
+
+                                    status ===
+                                      'aprovada' &&
+                                      styles.dayApprovedText,
+
+                                    selecionado &&
+                                      styles.daySelectedText,
+                                  ]}
+                                >
+                                  {dia}
+                                </Text>
+                              </Pressable>
+                            </View>
                           );
                         }
                       )}
@@ -1431,12 +1411,12 @@ export default function WebMoradorReservasScreen() {
                     </View>
                   </View>
 
-                  {/* PAINEL DIREITO */}
-
                   <View
-                    style={
-                      styles.detailsCard
-                    }
+                    style={[
+                      styles.detailsCard,
+                      isMobile &&
+                        styles.detailsCardMobile,
+                    ]}
                   >
                     <View
                       style={
@@ -1538,9 +1518,7 @@ export default function WebMoradorReservasScreen() {
                     </Text>
 
                     <TextInput
-                      value={
-                        observacao
-                      }
+                      value={observacao}
                       onChangeText={
                         setObservacao
                       }
@@ -1558,7 +1536,6 @@ export default function WebMoradorReservasScreen() {
                     <Pressable
                       style={[
                         styles.reserveButton,
-
                         (!dataSelecionada ||
                           salvando) &&
                           styles.reserveButtonDisabled,
@@ -1606,8 +1583,6 @@ export default function WebMoradorReservasScreen() {
               </>
             )}
 
-            {/* MINHAS RESERVAS */}
-
             <Text
               style={[
                 styles.sectionTitle,
@@ -1617,82 +1592,186 @@ export default function WebMoradorReservasScreen() {
               Minhas reservas
             </Text>
 
-            <View
-              style={
-                styles.reservasContainer
-              }
-            >
+            {reservas.length === 0 ? (
               <View
                 style={
-                  styles.tableHeader
+                  styles.emptyReservas
                 }
               >
-                <Text
-                  style={[
-                    styles.tableHeaderText,
-                    styles.colEspaco,
-                  ]}
-                >
-                  ESPAÇO
-                </Text>
+                <CalendarDays
+                  size={32}
+                  color={
+                    colors.textLight
+                  }
+                />
 
                 <Text
-                  style={[
-                    styles.tableHeaderText,
-                    styles.colData,
-                  ]}
-                >
-                  DATA
-                </Text>
-
-                <Text
-                  style={[
-                    styles.tableHeaderText,
-                    styles.colHorario,
-                  ]}
-                >
-                  HORÁRIO
-                </Text>
-
-                <Text
-                  style={[
-                    styles.tableHeaderText,
-                    styles.colStatus,
-                  ]}
-                >
-                  STATUS
-                </Text>
-              </View>
-
-              {reservas.length ===
-              0 ? (
-                <View
                   style={
-                    styles.emptyReservas
+                    styles.emptyReservationsText
                   }
                 >
-                  <CalendarDays
-                    size={32}
-                    color={
-                      colors.textLight
-                    }
-                  />
-
-                  <Text
-                    style={
-                      styles.emptyReservationsText
-                    }
-                  >
-                    Você ainda não possui reservas.
-                  </Text>
-                </View>
-              ) : (
-                reservas.map(
+                  Você ainda não possui reservas.
+                </Text>
+              </View>
+            ) : isMobile ? (
+              <View
+                style={
+                  styles.mobileReservations
+                }
+              >
+                {reservas.map(
                   (reserva) => (
                     <View
-                      key={
-                        reserva.id
+                      key={reserva.id}
+                      style={
+                        styles.mobileReservationCard
                       }
+                    >
+                      <View
+                        style={
+                          styles.mobileReservationTop
+                        }
+                      >
+                        <View
+                          style={
+                            styles.mobileReservationIcon
+                          }
+                        >
+                          <CalendarDays
+                            size={19}
+                            color={
+                              colors.primary
+                            }
+                          />
+                        </View>
+
+                        <View
+                          style={
+                            styles.mobileReservationTitleArea
+                          }
+                        >
+                          <Text
+                            style={
+                              styles.mobileReservationTitle
+                            }
+                          >
+                            {
+                              reserva.espaco
+                            }
+                          </Text>
+
+                          <Text
+                            style={
+                              styles.mobileReservationDate
+                            }
+                          >
+                            {formatarData(
+                              reserva.data
+                            )}
+                          </Text>
+                        </View>
+
+                        <StatusBadge
+                          status={
+                            reserva.status
+                          }
+                        />
+                      </View>
+
+                      <View
+                        style={
+                          styles.mobileReservationDetails
+                        }
+                      >
+                        <Clock3
+                          size={15}
+                          color={
+                            colors.textSecondary
+                          }
+                        />
+
+                        <Text
+                          style={
+                            styles.mobileReservationDetailText
+                          }
+                        >
+                          {limparHorario(
+                            reserva.horario_inicio
+                          )}{' '}
+                          às{' '}
+                          {limparHorario(
+                            reserva.horario_fim
+                          )}
+                        </Text>
+                      </View>
+
+                      {!!reserva.observacao && (
+                        <Text
+                          style={
+                            styles.mobileObservation
+                          }
+                        >
+                          {
+                            reserva.observacao
+                          }
+                        </Text>
+                      )}
+                    </View>
+                  )
+                )}
+              </View>
+            ) : (
+              <View
+                style={
+                  styles.reservasContainer
+                }
+              >
+                <View
+                  style={
+                    styles.tableHeader
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.tableHeaderText,
+                      styles.colEspaco,
+                    ]}
+                  >
+                    ESPAÇO
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.tableHeaderText,
+                      styles.colData,
+                    ]}
+                  >
+                    DATA
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.tableHeaderText,
+                      styles.colHorario,
+                    ]}
+                  >
+                    HORÁRIO
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.tableHeaderText,
+                      styles.colStatus,
+                    ]}
+                  >
+                    STATUS
+                  </Text>
+                </View>
+
+                {reservas.map(
+                  (reserva) => (
+                    <View
+                      key={reserva.id}
                       style={
                         styles.tableRow
                       }
@@ -1703,9 +1782,7 @@ export default function WebMoradorReservasScreen() {
                           styles.colEspaco,
                         ]}
                       >
-                        {
-                          reserva.espaco
-                        }
+                        {reserva.espaco}
                       </Text>
 
                       <Text
@@ -1747,13 +1824,13 @@ export default function WebMoradorReservasScreen() {
                       </View>
                     </View>
                   )
-                )
-              )}
-            </View>
+                )}
+              </View>
+            )}
           </>
         )}
-      </ScrollView>
-    </View>
+      </View>
+    </WebLayout>
   );
 }
 
@@ -1761,36 +1838,50 @@ function SummaryCard({
   titulo,
   valor,
   icon,
+  mobile = false,
   ultimo = false,
 }: {
   titulo: string;
   valor: number;
   icon: React.ReactNode;
+  mobile?: boolean;
   ultimo?: boolean;
 }) {
   return (
     <View
       style={[
         styles.summaryCard,
+        mobile &&
+          styles.summaryCardMobile,
         ultimo &&
           styles.lastSummaryCard,
       ]}
     >
       <View
-        style={styles.summaryIcon}
+        style={
+          styles.summaryIcon
+        }
       >
         {icon}
       </View>
 
-      <View>
+      <View
+        style={
+          styles.summaryInfo
+        }
+      >
         <Text
-          style={styles.summaryLabel}
+          style={
+            styles.summaryLabel
+          }
         >
           {titulo}
         </Text>
 
         <Text
-          style={styles.summaryValue}
+          style={
+            styles.summaryValue
+          }
         >
           {valor}
         </Text>
@@ -1810,7 +1901,9 @@ function Legenda({
 }) {
   return (
     <View
-      style={styles.legendItem}
+      style={
+        styles.legendItem
+      }
     >
       <View
         style={[
@@ -1825,7 +1918,9 @@ function Legenda({
       />
 
       <Text
-        style={styles.legendText}
+        style={
+          styles.legendText
+        }
       >
         {titulo}
       </Text>
@@ -1887,697 +1982,898 @@ function StatusBadge({
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      flexDirection: 'row',
-      backgroundColor:
-        colors.background,
-    },
-
-    content: {
-      flex: 1,
-      minWidth: 0,
-    },
-
-    contentContainer: {
-      padding: 30,
-      paddingBottom: 60,
-    },
-
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent:
-        'space-between',
-      marginBottom: 24,
-    },
-
-    title: {
-      color: colors.text,
-      fontSize: 26,
-      fontWeight: '800',
-    },
-
-    subtitle: {
-      color:
-        colors.textSecondary,
-      fontSize: 11,
-      marginTop: 5,
-    },
-
-    refreshButton: {
-      height: 43,
-      borderRadius: 11,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      backgroundColor:
-        colors.surface,
-      paddingHorizontal: 14,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    refreshText: {
-      marginLeft: 7,
-      color:
-        colors.textSecondary,
-      fontSize: 9,
-      fontWeight: '800',
-    },
-
-    errorBox: {
-      borderRadius: 11,
-      padding: 13,
-      backgroundColor:
-        colors.dangerLight,
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 16,
-    },
-
-    errorText: {
-      flex: 1,
-      color: colors.danger,
-      fontSize: 10,
-      fontWeight: '700',
-      marginLeft: 8,
-    },
-
-    successBox: {
-      borderRadius: 11,
-      padding: 13,
-      backgroundColor:
-        '#DCFCE7',
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 16,
-    },
-
-    successText: {
-      flex: 1,
-      color: '#15803D',
-      fontSize: 10,
-      fontWeight: '700',
-      marginLeft: 8,
-    },
-
-    loadingContainer: {
-      minHeight: 350,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    loadingText: {
-      color:
-        colors.textSecondary,
-      fontSize: 10,
-      marginTop: 12,
-    },
-
-    summary: {
-      flexDirection: 'row',
-      marginBottom: 28,
-    },
-
-    summaryCard: {
-      flex: 1,
-      minHeight: 95,
-      backgroundColor:
-        colors.surface,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      borderRadius: 14,
-      padding: 16,
-      marginRight: 12,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-
-    lastSummaryCard: {
-      marginRight: 0,
-    },
-
-    summaryIcon: {
-      width: 43,
-      height: 43,
-      borderRadius: 12,
-      backgroundColor:
-        colors.primaryLight,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 13,
-    },
-
-    summaryLabel: {
-      color:
-        colors.textSecondary,
-      fontSize: 9,
-      fontWeight: '700',
-    },
-
-    summaryValue: {
-      color: colors.text,
-      fontSize: 20,
-      fontWeight: '800',
-      marginTop: 3,
-    },
-
-    sectionTitle: {
-      color: colors.text,
-      fontSize: 15,
-      fontWeight: '800',
-      marginBottom: 14,
-    },
-
-    spaces: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      marginBottom: 20,
-    },
-
-    spaceCard: {
-      width: '48.5%',
-      minHeight: 125,
-      backgroundColor:
-        colors.surface,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      borderRadius: 15,
-      padding: 17,
-      marginRight: 12,
-      marginBottom: 12,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-
-    spaceCardActive: {
-      borderColor:
-        colors.primary,
-      borderWidth: 2,
-      backgroundColor:
-        colors.primaryLight,
-    },
-
-    spaceIcon: {
-      width: 47,
-      height: 47,
-      borderRadius: 13,
-      backgroundColor:
-        colors.primaryLight,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: 13,
-    },
-
-    spaceInfo: {
-      flex: 1,
-    },
-
-    spaceTitle: {
-      color: colors.text,
-      fontSize: 12,
-      fontWeight: '800',
-    },
-
-    spaceDescription: {
-      color:
-        colors.textSecondary,
-      fontSize: 9,
-      lineHeight: 14,
-      marginTop: 4,
-    },
-
-    spaceDetails: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 6,
-    },
-
-    spaceDetailText: {
-      color:
-        colors.textSecondary,
-      fontSize: 8,
-      marginLeft: 5,
-    },
-
-    emptyBox: {
-      minHeight: 160,
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      backgroundColor:
-        colors.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 25,
-    },
-
-    emptyTitle: {
-      color: colors.text,
-      fontSize: 12,
-      fontWeight: '800',
-      marginTop: 10,
-    },
-
-    calendarSectionTitle: {
-      marginTop: 8,
-    },
-
-    bookingArea: {
-      flexDirection: 'row',
-      alignItems: 'stretch',
-      marginBottom: 32,
-    },
-
-    calendarCard: {
-      flex: 1.65,
-      backgroundColor:
-        colors.surface,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      borderRadius: 16,
-      padding: 18,
-      marginRight: 14,
-    },
-
-    calendarHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent:
-        'space-between',
-      marginBottom: 18,
-    },
-
-    monthButton: {
-      width: 38,
-      height: 38,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor:
-        colors.background,
-    },
-
-    monthTitleArea: {
-      alignItems: 'center',
-    },
-
-    monthTitle: {
-      color: colors.text,
-      fontSize: 15,
-      fontWeight: '800',
-    },
-
-    yearTitle: {
-      color:
-        colors.textSecondary,
-      fontSize: 9,
-      marginTop: 2,
-    },
-
-    weekHeader: {
-      flexDirection: 'row',
-      marginBottom: 6,
-    },
-
-    weekCell: {
-      width: '14.2857%',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: 30,
-    },
-
-    weekText: {
-      color:
-        colors.textSecondary,
-      fontSize: 8,
-      fontWeight: '800',
-    },
-
-    calendarGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-    },
-
-    dayCell: {
-      width: '14.2857%',
-      aspectRatio: 1.12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 3,
-    },
-
-    dayButton: {
-      borderRadius: 9,
-      borderWidth: 1,
-      borderColor:
-        '#86EFAC',
-      backgroundColor:
-        '#DCFCE7',
-    },
-
-    dayText: {
-      color: '#166534',
-      fontSize: 10,
-      fontWeight: '800',
-    },
-
-    dayPast: {
-      backgroundColor:
-        colors.background,
-      borderColor:
-        colors.border,
-    },
-
-    dayPastText: {
-      color:
-        colors.textLight,
-    },
-
-    dayPending: {
-      backgroundColor:
-        '#FEF3C7',
-      borderColor:
-        '#FCD34D',
-    },
-
-    dayPendingText: {
-      color: '#92400E',
-    },
-
-    dayApproved: {
-      backgroundColor:
-        '#FEE2E2',
-      borderColor:
-        '#FCA5A5',
-    },
-
-    dayApprovedText: {
-      color: '#B91C1C',
-    },
-
-    daySelected: {
-      backgroundColor:
-        colors.primary,
-      borderColor:
-        colors.primary,
-    },
-
-    daySelectedText: {
-      color: '#FFFFFF',
-    },
-
-    legend: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      marginTop: 18,
-      paddingTop: 15,
-      borderTopWidth: 1,
-      borderTopColor:
-        colors.border,
-    },
-
-    legendItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginRight: 18,
-      marginBottom: 4,
-    },
-
-    legendColor: {
-      width: 13,
-      height: 13,
-      borderRadius: 4,
-      borderWidth: 1,
-      marginRight: 6,
-    },
-
-    legendText: {
-      color:
-        colors.textSecondary,
-      fontSize: 8,
-      fontWeight: '700',
-    },
-
-    detailsCard: {
-      flex: 0.85,
-      backgroundColor:
-        colors.surface,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      borderRadius: 16,
-      padding: 20,
-    },
-
-    detailsIcon: {
-      width: 48,
-      height: 48,
-      borderRadius: 13,
-      backgroundColor:
-        colors.primaryLight,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 13,
-    },
-
-    detailsTitle: {
-      color: colors.text,
-      fontSize: 16,
-      fontWeight: '800',
-    },
-
-    detailsSubtitle: {
-      color:
-        colors.textSecondary,
-      fontSize: 10,
-      marginTop: 4,
-    },
-
-    divider: {
-      height: 1,
-      backgroundColor:
-        colors.border,
-      marginVertical: 17,
-    },
-
-    smallLabel: {
-      color:
-        colors.textSecondary,
-      fontSize: 8,
-      fontWeight: '800',
-      marginBottom: 8,
-    },
-
-    timeBox: {
-      minHeight: 62,
-      borderRadius: 12,
-      backgroundColor:
-        colors.primaryLight,
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 13,
-      marginBottom: 17,
-    },
-
-    timeInfo: {
-      marginLeft: 10,
-      flex: 1,
-    },
-
-    timeValue: {
-      color: colors.text,
-      fontSize: 11,
-      fontWeight: '800',
-    },
-
-    timeHint: {
-      color:
-        colors.textSecondary,
-      fontSize: 8,
-      marginTop: 3,
-    },
-
-    observationInput: {
-      minHeight: 90,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      borderRadius: 11,
-      backgroundColor:
-        colors.background,
-      padding: 11,
-      color: colors.text,
-      fontSize: 10,
-      marginBottom: 14,
-      outlineStyle: 'none',
-    } as any,
-
-    reserveButton: {
-      height: 45,
-      borderRadius: 11,
-      backgroundColor:
-        colors.primary,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    reserveButtonDisabled: {
-      opacity: 0.45,
-    },
-
-    reserveButtonText: {
-      color: '#FFFFFF',
-      fontSize: 10,
-      fontWeight: '800',
-      marginLeft: 7,
-    },
-
-    approvalHint: {
-      color:
-        colors.textSecondary,
-      fontSize: 8,
-      lineHeight: 13,
-      textAlign: 'center',
-      marginTop: 9,
-    },
-
-    myReservationsTitle: {
-      marginTop: 4,
-    },
-
-    reservasContainer: {
-      backgroundColor:
-        colors.surface,
-      borderWidth: 1,
-      borderColor:
-        colors.border,
-      borderRadius: 14,
-      overflow: 'hidden',
-    },
-
-    tableHeader: {
-      minHeight: 43,
-      backgroundColor:
-        colors.background,
-      borderBottomWidth: 1,
-      borderBottomColor:
-        colors.border,
-      paddingHorizontal: 17,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-
-    tableHeaderText: {
-      color:
-        colors.textSecondary,
-      fontSize: 8,
-      fontWeight: '800',
-    },
-
-    tableRow: {
-      minHeight: 68,
-      borderBottomWidth: 1,
-      borderBottomColor:
-        colors.border,
-      paddingHorizontal: 17,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-
-    colEspaco: {
-      flex: 1.7,
-    },
-
-    colData: {
-      flex: 1,
-    },
-
-    colHorario: {
-      flex: 1.3,
-    },
-
-    colStatus: {
-      flex: 0.8,
-    },
-
-    tableText: {
-      color:
-        colors.textSecondary,
-      fontSize: 9,
-    },
-
-    emptyReservas: {
-      minHeight: 140,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    emptyReservationsText: {
-      color:
-        colors.textSecondary,
-      fontSize: 9,
-      marginTop: 9,
-    },
-
-    statusBadge: {
-      alignSelf: 'flex-start',
-      borderRadius: 7,
-      paddingHorizontal: 9,
-      paddingVertical: 5,
-    },
-
-    statusText: {
-      fontSize: 8,
-      fontWeight: '800',
-    },
-
-    statusApproved: {
-      backgroundColor:
-        '#DCFCE7',
-    },
-
-    statusApprovedText: {
-      color: '#15803D',
-    },
-
-    statusPending: {
-      backgroundColor:
-        '#FEF3C7',
-    },
-
-    statusPendingText: {
-      color: '#92400E',
-    },
-
-    statusRejected: {
-      backgroundColor:
-        '#FEE2E2',
-    },
-
-    statusRejectedText: {
-      color: '#B91C1C',
-    },
-
-    statusCanceled: {
-      backgroundColor:
-        colors.background,
-    },
-
-    statusCanceledText: {
-      color:
-        colors.textSecondary,
-    },
-  });
+const styles = StyleSheet.create({
+  page: {
+    flex: 1,
+    width: '100%',
+    minWidth: 0,
+  },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent:
+      'space-between',
+    marginBottom: 24,
+  },
+
+  headerMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+
+  headerText: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  title: {
+    color: colors.text,
+    fontSize: 26,
+    fontWeight: '800',
+  },
+
+  subtitle: {
+    color:
+      colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 5,
+  },
+
+  refreshButton: {
+    height: 43,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    backgroundColor:
+      colors.surface,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  refreshButtonMobile: {
+    width: '100%',
+    marginTop: 15,
+  },
+
+  refreshText: {
+    marginLeft: 7,
+    color:
+      colors.textSecondary,
+    fontSize: 9,
+    fontWeight: '800',
+  },
+
+  errorBox: {
+    borderRadius: 11,
+    padding: 13,
+    backgroundColor:
+      colors.dangerLight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  errorText: {
+    flex: 1,
+    color: colors.danger,
+    fontSize: 10,
+    lineHeight: 15,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+
+  successBox: {
+    borderRadius: 11,
+    padding: 13,
+    backgroundColor:
+      '#DCFCE7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  successText: {
+    flex: 1,
+    color: '#15803D',
+    fontSize: 10,
+    lineHeight: 15,
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+
+  loadingContainer: {
+    minHeight: 350,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  loadingText: {
+    color:
+      colors.textSecondary,
+    fontSize: 10,
+    marginTop: 12,
+  },
+
+  summary: {
+    flexDirection: 'row',
+    marginBottom: 28,
+  },
+
+  summaryMobile: {
+    flexDirection: 'column',
+  },
+
+  summaryCard: {
+    flex: 1,
+    minHeight: 95,
+    backgroundColor:
+      colors.surface,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    borderRadius: 14,
+    padding: 16,
+    marginRight: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+  },
+
+  summaryCardMobile: {
+    width: '100%',
+    flexGrow: 0,
+    flexShrink: 0,
+    marginRight: 0,
+    marginBottom: 10,
+    minHeight: 82,
+  },
+
+  lastSummaryCard: {
+    marginRight: 0,
+  },
+
+  summaryIcon: {
+    width: 43,
+    height: 43,
+    borderRadius: 12,
+    backgroundColor:
+      colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 13,
+    flexShrink: 0,
+  },
+
+  summaryInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  summaryLabel: {
+    color:
+      colors.textSecondary,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+
+  summaryValue: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+    marginBottom: 14,
+  },
+
+  spaces: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 20,
+  },
+
+  spacesMobile: {
+    flexDirection: 'column',
+  },
+
+  spaceCard: {
+    width: '48.5%',
+    minHeight: 125,
+    backgroundColor:
+      colors.surface,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    borderRadius: 15,
+    padding: 17,
+    marginRight: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  spaceCardMobile: {
+    width: '100%',
+    marginRight: 0,
+    minHeight: 115,
+    padding: 15,
+  },
+
+  spaceCardActive: {
+    borderColor:
+      colors.primary,
+    borderWidth: 2,
+    backgroundColor:
+      colors.primaryLight,
+  },
+
+  spaceIcon: {
+    width: 47,
+    height: 47,
+    borderRadius: 13,
+    backgroundColor:
+      colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 13,
+    flexShrink: 0,
+  },
+
+  spaceInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  spaceTitle: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  spaceDescription: {
+    color:
+      colors.textSecondary,
+    fontSize: 9,
+    lineHeight: 14,
+    marginTop: 4,
+  },
+
+  spaceDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+
+  spaceDetailText: {
+    flex: 1,
+    color:
+      colors.textSecondary,
+    fontSize: 8,
+    lineHeight: 13,
+    marginLeft: 5,
+  },
+
+  emptyBox: {
+    minHeight: 160,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    backgroundColor:
+      colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 25,
+    padding: 20,
+  },
+
+  emptyTitle: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+
+  calendarSectionTitle: {
+    marginTop: 8,
+  },
+
+  bookingArea: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    width: '100%',
+    marginBottom: 32,
+  },
+
+  /*
+   * CORREÇÃO MOBILE
+   *
+   * No celular o calendário e o
+   * formulário ficam um embaixo
+   * do outro.
+   */
+  bookingAreaMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    width: '100%',
+    minWidth: 0,
+  },
+
+  calendarCard: {
+    flex: 1.65,
+    minWidth: 0,
+    backgroundColor:
+      colors.surface,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    borderRadius: 16,
+    padding: 18,
+    marginRight: 14,
+  },
+
+  /*
+   * Não usamos flex: 0 aqui.
+   * Isso evita o calendário
+   * colapsar no React Native Web.
+   */
+  calendarCardMobile: {
+    width: '100%',
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 'auto',
+    alignSelf: 'stretch',
+    marginRight: 0,
+    marginBottom: 20,
+    padding: 12,
+    overflow: 'visible',
+  },
+
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent:
+      'space-between',
+    marginBottom: 18,
+  },
+
+  monthButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor:
+      colors.background,
+  },
+
+  monthTitleArea: {
+    flex: 1,
+    alignItems: 'center',
+    minWidth: 0,
+  },
+
+  monthTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  yearTitle: {
+    color:
+      colors.textSecondary,
+    fontSize: 9,
+    marginTop: 2,
+  },
+
+  weekHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+
+  weekCell: {
+    width: '14.2857%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 30,
+  },
+
+  weekText: {
+    color:
+      colors.textSecondary,
+    fontSize: 8,
+    fontWeight: '800',
+  },
+
+  calendarGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+
+  /*
+   * Altura fixa evita que o
+   * calendário perca sua altura
+   * no navegador mobile.
+   */
+  dayCell: {
+    width: '14.2857%',
+    height: 48,
+    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  dayButton: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor:
+      '#86EFAC',
+    backgroundColor:
+      '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  dayText: {
+    color: '#166534',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+
+  dayPast: {
+    backgroundColor:
+      colors.background,
+    borderColor:
+      colors.border,
+  },
+
+  dayPastText: {
+    color:
+      colors.textLight,
+  },
+
+  dayPending: {
+    backgroundColor:
+      '#FEF3C7',
+    borderColor:
+      '#FCD34D',
+  },
+
+  dayPendingText: {
+    color: '#92400E',
+  },
+
+  dayApproved: {
+    backgroundColor:
+      '#FEE2E2',
+    borderColor:
+      '#FCA5A5',
+  },
+
+  dayApprovedText: {
+    color: '#B91C1C',
+  },
+
+  daySelected: {
+    backgroundColor:
+      colors.primary,
+    borderColor:
+      colors.primary,
+  },
+
+  daySelectedText: {
+    color: '#FFFFFF',
+  },
+
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 18,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor:
+      colors.border,
+  },
+
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+    marginBottom: 7,
+  },
+
+  legendColor: {
+    width: 13,
+    height: 13,
+    borderRadius: 4,
+    borderWidth: 1,
+    marginRight: 6,
+  },
+
+  legendText: {
+    color:
+      colors.textSecondary,
+    fontSize: 8,
+    fontWeight: '700',
+  },
+
+  detailsCard: {
+    flex: 0.85,
+    minWidth: 0,
+    backgroundColor:
+      colors.surface,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    borderRadius: 16,
+    padding: 20,
+  },
+
+  /*
+   * Também não usamos flex: 0
+   * no formulário mobile.
+   */
+  detailsCardMobile: {
+    width: '100%',
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 'auto',
+    alignSelf: 'stretch',
+    padding: 16,
+    marginTop: 0,
+  },
+
+  detailsIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 13,
+    backgroundColor:
+      colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 13,
+  },
+
+  detailsTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  detailsSubtitle: {
+    color:
+      colors.textSecondary,
+    fontSize: 10,
+    marginTop: 4,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor:
+      colors.border,
+    marginVertical: 17,
+  },
+
+  smallLabel: {
+    color:
+      colors.textSecondary,
+    fontSize: 8,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+
+  timeBox: {
+    minHeight: 62,
+    borderRadius: 12,
+    backgroundColor:
+      colors.primaryLight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 13,
+    marginBottom: 17,
+  },
+
+  timeInfo: {
+    marginLeft: 10,
+    flex: 1,
+    minWidth: 0,
+  },
+
+  timeValue: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  timeHint: {
+    color:
+      colors.textSecondary,
+    fontSize: 8,
+    marginTop: 3,
+  },
+
+  observationInput: {
+    minHeight: 90,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    borderRadius: 11,
+    backgroundColor:
+      colors.background,
+    padding: 11,
+    color: colors.text,
+    fontSize: 10,
+    marginBottom: 14,
+    outlineStyle: 'none',
+  } as any,
+
+  reserveButton: {
+    minHeight: 45,
+    borderRadius: 11,
+    backgroundColor:
+      colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+
+  reserveButtonDisabled: {
+    opacity: 0.45,
+  },
+
+  reserveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+    marginLeft: 7,
+  },
+
+  approvalHint: {
+    color:
+      colors.textSecondary,
+    fontSize: 8,
+    lineHeight: 13,
+    textAlign: 'center',
+    marginTop: 9,
+  },
+
+  myReservationsTitle: {
+    marginTop: 4,
+  },
+
+  reservasContainer: {
+    backgroundColor:
+      colors.surface,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+
+  tableHeader: {
+    minHeight: 43,
+    backgroundColor:
+      colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor:
+      colors.border,
+    paddingHorizontal: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  tableHeaderText: {
+    color:
+      colors.textSecondary,
+    fontSize: 8,
+    fontWeight: '800',
+  },
+
+  tableRow: {
+    minHeight: 68,
+    borderBottomWidth: 1,
+    borderBottomColor:
+      colors.border,
+    paddingHorizontal: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  tableText: {
+    color: colors.text,
+    fontSize: 9,
+    fontWeight: '600',
+    paddingRight: 8,
+  },
+
+  colEspaco: {
+    flex: 1.4,
+    minWidth: 0,
+  },
+
+  colData: {
+    flex: 0.8,
+    minWidth: 0,
+  },
+
+  colHorario: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  colStatus: {
+    flex: 0.8,
+    minWidth: 0,
+    alignItems: 'flex-start',
+  },
+
+  emptyReservas: {
+    minHeight: 150,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    borderRadius: 14,
+    backgroundColor:
+      colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+
+  emptyReservationsText: {
+    color:
+      colors.textSecondary,
+    fontSize: 9,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+
+  mobileReservations: {
+    width: '100%',
+  },
+
+  mobileReservationCard: {
+    width: '100%',
+    backgroundColor:
+      colors.surface,
+    borderWidth: 1,
+    borderColor:
+      colors.border,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+  },
+
+  mobileReservationTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  mobileReservationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    backgroundColor:
+      colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    flexShrink: 0,
+  },
+
+  mobileReservationTitleArea: {
+    flex: 1,
+    minWidth: 0,
+    marginRight: 8,
+  },
+
+  mobileReservationTitle: {
+    color: colors.text,
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: '800',
+  },
+
+  mobileReservationDate: {
+    color:
+      colors.textSecondary,
+    fontSize: 9,
+    marginTop: 3,
+  },
+
+  mobileReservationDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor:
+      colors.border,
+  },
+
+  mobileReservationDetailText: {
+    color:
+      colors.textSecondary,
+    fontSize: 9,
+    marginLeft: 6,
+  },
+
+  mobileObservation: {
+    color:
+      colors.textSecondary,
+    fontSize: 9,
+    lineHeight: 15,
+    marginTop: 9,
+  },
+
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor:
+      colors.background,
+  },
+
+  statusText: {
+    color:
+      colors.textSecondary,
+    fontSize: 8,
+    fontWeight: '800',
+  },
+
+  statusApproved: {
+    backgroundColor:
+      '#DCFCE7',
+  },
+
+  statusApprovedText: {
+    color: '#15803D',
+  },
+
+  statusPending: {
+    backgroundColor:
+      '#FEF3C7',
+  },
+
+  statusPendingText: {
+    color: '#92400E',
+  },
+
+  statusRejected: {
+    backgroundColor:
+      '#FEE2E2',
+  },
+
+  statusRejectedText: {
+    color: '#B91C1C',
+  },
+
+  statusCanceled: {
+    backgroundColor:
+      '#F3F4F6',
+  },
+
+  statusCanceledText: {
+    color: '#6B7280',
+  },
+});

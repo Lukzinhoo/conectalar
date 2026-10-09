@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -28,12 +29,14 @@ import {
 } from 'lucide-react-native';
 
 import WebSidebar from '../../../components/WebSidebar';
+import WebLayout from '../../../components/WebLayout';
+
 import { colors } from '../../../theme/theme';
 import { supabase } from '../../../services/supabase';
 
-// =====================================================
-// TIPOS
-// =====================================================
+/* =====================================================
+   TIPOS
+===================================================== */
 
 type HorarioBanco = {
   id: string;
@@ -57,11 +60,15 @@ type Horario = {
   ativo: boolean;
 };
 
-// =====================================================
-// TELA
-// =====================================================
+/* =====================================================
+   TELA
+===================================================== */
 
 export default function WebHorariosScreen() {
+  const { width } = useWindowDimensions();
+
+  const isMobile = width < 768;
+
   const [horarios, setHorarios] =
     useState<Horario[]>([]);
 
@@ -76,9 +83,7 @@ export default function WebHorariosScreen() {
   const [
     horarioEditando,
     setHorarioEditando,
-  ] = useState<Horario | null>(
-    null
-  );
+  ] = useState<Horario | null>(null);
 
   const [titulo, setTitulo] =
     useState('');
@@ -126,9 +131,9 @@ export default function WebHorariosScreen() {
     null
   );
 
-  // =====================================================
-  // CARREGAR
-  // =====================================================
+  /* ===================================================
+     CARREGAR
+  =================================================== */
 
   useEffect(() => {
     carregarHorarios(false);
@@ -146,25 +151,23 @@ export default function WebHorariosScreen() {
 
       setErro('');
 
-      const {
-        data,
-        error,
-      } = await supabase
-        .from('horarios')
-        .select(`
-          id,
-          titulo,
-          dias,
-          horario_inicio,
-          horario_fim,
-          observacao,
-          ativo,
-          criado_em,
-          atualizado_em
-        `)
-        .order('criado_em', {
-          ascending: false,
-        });
+      const { data, error } =
+        await supabase
+          .from('horarios')
+          .select(`
+            id,
+            titulo,
+            dias,
+            horario_inicio,
+            horario_fim,
+            observacao,
+            ativo,
+            criado_em,
+            atualizado_em
+          `)
+          .order('criado_em', {
+            ascending: false,
+          });
 
       if (error) {
         console.error(
@@ -180,34 +183,30 @@ export default function WebHorariosScreen() {
       }
 
       const registros =
-        (data ??
-          []) as HorarioBanco[];
+        (data ?? []) as HorarioBanco[];
 
       const lista: Horario[] =
-        registros.map(
-          (item) => ({
-            id: item.id,
+        registros.map(item => ({
+          id: item.id,
 
-            titulo:
-              item.titulo,
+          titulo:
+            item.titulo,
 
-            dias:
-              item.dias,
+          dias:
+            item.dias,
 
-            horarioInicio:
-              item.horario_inicio,
+          horarioInicio:
+            item.horario_inicio,
 
-            horarioFim:
-              item.horario_fim,
+          horarioFim:
+            item.horario_fim,
 
-            observacao:
-              item.observacao ??
-              '',
+          observacao:
+            item.observacao ?? '',
 
-            ativo:
-              item.ativo,
-          })
-        );
+          ativo:
+            item.ativo,
+        }));
 
       setHorarios(lista);
     } catch (error) {
@@ -225,24 +224,24 @@ export default function WebHorariosScreen() {
     }
   }
 
-  // =====================================================
-  // RESUMO
-  // =====================================================
+  /* ===================================================
+     RESUMO
+  =================================================== */
 
   const total =
     horarios.length;
 
   const ativos =
     horarios.filter(
-      (item) => item.ativo
+      item => item.ativo
     ).length;
 
   const inativos =
     total - ativos;
 
-  // =====================================================
-  // FILTRO
-  // =====================================================
+  /* ===================================================
+     FILTRO
+  =================================================== */
 
   const horariosFiltrados =
     useMemo(() => {
@@ -256,7 +255,7 @@ export default function WebHorariosScreen() {
       }
 
       return horarios.filter(
-        (item) =>
+        item =>
           item.titulo
             .toLowerCase()
             .includes(termo) ||
@@ -269,9 +268,9 @@ export default function WebHorariosScreen() {
       );
     }, [busca, horarios]);
 
-  // =====================================================
-  // LIMPAR FORMULÁRIO
-  // =====================================================
+  /* ===================================================
+     LIMPAR FORMULÁRIO
+  =================================================== */
 
   function limparFormulario() {
     setTitulo('');
@@ -282,9 +281,9 @@ export default function WebHorariosScreen() {
     setErro('');
   }
 
-  // =====================================================
-  // NOVO
-  // =====================================================
+  /* ===================================================
+     NOVO
+  =================================================== */
 
   function abrirNovoHorario() {
     setHorarioEditando(null);
@@ -294,9 +293,9 @@ export default function WebHorariosScreen() {
     setModalAberto(true);
   }
 
-  // =====================================================
-  // EDITAR
-  // =====================================================
+  /* ===================================================
+     EDITAR
+  =================================================== */
 
   function editarHorario(
     horario: Horario
@@ -330,9 +329,9 @@ export default function WebHorariosScreen() {
     setModalAberto(true);
   }
 
-  // =====================================================
-  // FECHAR
-  // =====================================================
+  /* ===================================================
+     FECHAR
+  =================================================== */
 
   function fecharModal() {
     if (salvando) {
@@ -346,9 +345,9 @@ export default function WebHorariosScreen() {
     limparFormulario();
   }
 
-  // =====================================================
-  // VALIDAR HORÁRIO
-  // =====================================================
+  /* ===================================================
+     VALIDAR HORÁRIO
+  =================================================== */
 
   function horarioValido(
     valor: string
@@ -359,9 +358,9 @@ export default function WebHorariosScreen() {
     return regex.test(valor);
   }
 
-  // =====================================================
-  // SALVAR
-  // =====================================================
+  /* ===================================================
+     SALVAR
+  =================================================== */
 
   async function salvarHorario() {
     if (salvando) {
@@ -489,9 +488,9 @@ export default function WebHorariosScreen() {
           data as HorarioBanco;
 
         setHorarios(
-          (atual) =>
+          atual =>
             atual.map(
-              (item) =>
+              item =>
                 item.id ===
                 atualizado.id
                   ? {
@@ -575,7 +574,7 @@ export default function WebHorariosScreen() {
           data as HorarioBanco;
 
         setHorarios(
-          (atual) => [
+          atual => [
             {
               id: novo.id,
 
@@ -623,9 +622,9 @@ export default function WebHorariosScreen() {
     }
   }
 
-  // =====================================================
-  // ATIVAR / DESATIVAR
-  // =====================================================
+  /* ===================================================
+     ATIVAR / DESATIVAR
+  =================================================== */
 
   async function alterarStatus(
     horario: Horario
@@ -644,21 +643,20 @@ export default function WebHorariosScreen() {
       const novoStatus =
         !horario.ativo;
 
-      const {
-        error,
-      } = await supabase
-        .from('horarios')
-        .update({
-          ativo:
-            novoStatus,
+      const { error } =
+        await supabase
+          .from('horarios')
+          .update({
+            ativo:
+              novoStatus,
 
-          atualizado_em:
-            new Date().toISOString(),
-        })
-        .eq(
-          'id',
-          horario.id
-        );
+            atualizado_em:
+              new Date().toISOString(),
+          })
+          .eq(
+            'id',
+            horario.id
+          );
 
       if (error) {
         console.error(
@@ -674,9 +672,9 @@ export default function WebHorariosScreen() {
       }
 
       setHorarios(
-        (atual) =>
+        atual =>
           atual.map(
-            (item) =>
+            item =>
               item.id ===
               horario.id
                 ? {
@@ -701,9 +699,9 @@ export default function WebHorariosScreen() {
     }
   }
 
-  // =====================================================
-  // EXCLUIR
-  // =====================================================
+  /* ===================================================
+     EXCLUIR
+  =================================================== */
 
   async function excluirHorario(
     horario: Horario
@@ -731,15 +729,14 @@ export default function WebHorariosScreen() {
 
       setErro('');
 
-      const {
-        error,
-      } = await supabase
-        .from('horarios')
-        .delete()
-        .eq(
-          'id',
-          horario.id
-        );
+      const { error } =
+        await supabase
+          .from('horarios')
+          .delete()
+          .eq(
+            'id',
+            horario.id
+          );
 
       if (error) {
         console.error(
@@ -755,9 +752,9 @@ export default function WebHorariosScreen() {
       }
 
       setHorarios(
-        (atual) =>
+        atual =>
           atual.filter(
-            (item) =>
+            item =>
               item.id !==
               horario.id
           )
@@ -776,43 +773,72 @@ export default function WebHorariosScreen() {
     }
   }
 
-  // =====================================================
-  // RENDER
-  // =====================================================
+  /* ===================================================
+     RENDER
+  =================================================== */
 
   return (
-    <View style={styles.container}>
-      <WebSidebar
-        active="horarios"
-      />
-
-      <View style={styles.content}>
+    <>
+      <WebLayout
+        sidebar={
+          <WebSidebar
+            active="horarios"
+          />
+        }
+      >
         {/* CABEÇALHO */}
 
-        <View style={styles.header}>
-          <View>
+        <View
+          style={[
+            styles.header,
+
+            isMobile &&
+              styles.headerMobile,
+          ]}
+        >
+          <View
+            style={
+              styles.headerTextArea
+            }
+          >
             <Text
-              style={styles.title}
+              style={[
+                styles.title,
+
+                isMobile &&
+                  styles.titleMobile,
+              ]}
             >
               Horários
             </Text>
 
             <Text
-              style={styles.subtitle}
+              style={
+                styles.subtitle
+              }
             >
-              Gerencie os horários de serviços e funcionamento do condomínio.
+              Gerencie os horários
+              de serviços e
+              funcionamento do
+              condomínio.
             </Text>
           </View>
 
           <View
-            style={
-              styles.headerActions
-            }
+            style={[
+              styles.headerActions,
+
+              isMobile &&
+                styles.headerActionsMobile,
+            ]}
           >
             <Pressable
-              style={
-                styles.refreshButton
-              }
+              style={[
+                styles.refreshButton,
+
+                isMobile &&
+                  styles.headerButtonMobile,
+              ]}
               onPress={() =>
                 carregarHorarios()
               }
@@ -847,9 +873,12 @@ export default function WebHorariosScreen() {
             </Pressable>
 
             <Pressable
-              style={
-                styles.novoButton
-              }
+              style={[
+                styles.novoButton,
+
+                isMobile &&
+                  styles.headerButtonMobile,
+              ]}
               onPress={
                 abrirNovoHorario
               }
@@ -891,30 +920,51 @@ export default function WebHorariosScreen() {
 
         {/* RESUMO */}
 
-        <View style={styles.cards}>
+        <View
+          style={[
+            styles.cards,
+
+            isMobile &&
+              styles.cardsMobile,
+          ]}
+        >
           <ResumoCard
             titulo="Total"
             valor={total}
             tipo="total"
+            isMobile={
+              isMobile
+            }
           />
 
           <ResumoCard
             titulo="Ativos"
             valor={ativos}
             tipo="ativo"
+            isMobile={
+              isMobile
+            }
           />
 
           <ResumoCard
             titulo="Inativos"
             valor={inativos}
             tipo="inativo"
+            isMobile={
+              isMobile
+            }
           />
         </View>
 
         {/* BUSCA */}
 
         <View
-          style={styles.searchBox}
+          style={[
+            styles.searchBox,
+
+            isMobile &&
+              styles.searchBoxMobile,
+          ]}
         >
           <Search
             size={18}
@@ -938,72 +988,79 @@ export default function WebHorariosScreen() {
 
         {/* LISTA */}
 
-        <ScrollView
-          style={styles.scroll}
-          showsVerticalScrollIndicator={
-            false
-          }
-        >
-          {carregando ? (
-            <View
-              style={styles.vazio}
+        {carregando ? (
+          <View
+            style={styles.vazio}
+          >
+            <ActivityIndicator
+              size="large"
+              color={
+                colors.primary
+              }
+            />
+
+            <Text
+              style={
+                styles.carregandoText
+              }
             >
-              <ActivityIndicator
-                size="large"
-                color={
-                  colors.primary
-                }
-              />
+              Carregando horários...
+            </Text>
+          </View>
+        ) : horariosFiltrados.length ===
+          0 ? (
+          <View
+            style={styles.vazio}
+          >
+            <Clock3
+              size={42}
+              color={
+                colors.textLight
+              }
+            />
 
-              <Text
-                style={
-                  styles.carregandoText
-                }
-              >
-                Carregando horários...
-              </Text>
-            </View>
-          ) : horariosFiltrados.length ===
-            0 ? (
-            <View
-              style={styles.vazio}
+            <Text
+              style={
+                styles.vazioTitle
+              }
             >
-              <Clock3
-                size={42}
-                color={
-                  colors.textLight
-                }
-              />
+              Nenhum horário
+              encontrado
+            </Text>
 
-              <Text
-                style={
-                  styles.vazioTitle
-                }
-              >
-                Nenhum horário encontrado
-              </Text>
-
-              <Text
-                style={
-                  styles.vazioText
-                }
-              >
-                Cadastre um novo horário para começar.
-              </Text>
-            </View>
-          ) : (
-            horariosFiltrados.map(
-              (horario) => (
+            <Text
+              style={
+                styles.vazioText
+              }
+            >
+              Cadastre um novo
+              horário para começar.
+            </Text>
+          </View>
+        ) : (
+          <View
+            style={
+              styles.lista
+            }
+          >
+            {horariosFiltrados.map(
+              horario => (
                 <View
                   key={horario.id}
-                  style={
-                    styles.horarioCard
-                  }
+                  style={[
+                    styles.horarioCard,
+
+                    isMobile &&
+                      styles.horarioCardMobile,
+                  ]}
                 >
                   <View
-                    style={
-                      styles.horarioIcon
-                    }
+                    style={[
+                      styles.horarioIcon,
+
+                      isMobile &&
+                        styles.horarioIconMobile,
+                    ]}
                   >
                     <Clock3
                       size={22}
@@ -1019,9 +1076,12 @@ export default function WebHorariosScreen() {
                     }
                   >
                     <View
-                      style={
-                        styles.cardTopo
-                      }
+                      style={[
+                        styles.cardTopo,
+
+                        isMobile &&
+                          styles.cardTopoMobile,
+                      ]}
                     >
                       <View
                         style={
@@ -1064,9 +1124,12 @@ export default function WebHorariosScreen() {
                       </View>
 
                       <View
-                        style={
-                          styles.acoes
-                        }
+                        style={[
+                          styles.acoes,
+
+                          isMobile &&
+                            styles.acoesMobile,
+                        ]}
                       >
                         <Pressable
                           style={
@@ -1154,14 +1217,20 @@ export default function WebHorariosScreen() {
                     </View>
 
                     <View
-                      style={
-                        styles.dadosLinha
-                      }
+                      style={[
+                        styles.dadosLinha,
+
+                        isMobile &&
+                          styles.dadosLinhaMobile,
+                      ]}
                     >
                       <View
-                        style={
-                          styles.dadoBox
-                        }
+                        style={[
+                          styles.dadoBox,
+
+                          isMobile &&
+                            styles.dadoBoxMobile,
+                        ]}
                       >
                         <Text
                           style={
@@ -1181,9 +1250,12 @@ export default function WebHorariosScreen() {
                       </View>
 
                       <View
-                        style={
-                          styles.dadoBox
-                        }
+                        style={[
+                          styles.dadoBox,
+
+                          isMobile &&
+                            styles.dadoBoxMobile,
+                        ]}
                       >
                         <Text
                           style={
@@ -1223,10 +1295,10 @@ export default function WebHorariosScreen() {
                   </View>
                 </View>
               )
-            )
-          )}
-        </ScrollView>
-      </View>
+            )}
+          </View>
+        )}
+      </WebLayout>
 
       {/* MODAL */}
 
@@ -1237,17 +1309,36 @@ export default function WebHorariosScreen() {
         onRequestClose={
           fecharModal
         }
+        statusBarTranslucent
       >
         <View
-          style={styles.overlay}
+          style={[
+            styles.overlay,
+
+            isMobile &&
+              styles.overlayMobile,
+          ]}
         >
-          <View style={styles.modal}>
+          <View
+            style={[
+              styles.modal,
+
+              isMobile &&
+                styles.modalMobile,
+            ]}
+          >
+            {/* CABEÇALHO FIXO */}
+
             <View
               style={
                 styles.modalHeader
               }
             >
-              <View>
+              <View
+                style={
+                  styles.modalHeaderText
+                }
+              >
                 <Text
                   style={
                     styles.modalTitle
@@ -1263,7 +1354,8 @@ export default function WebHorariosScreen() {
                     styles.modalSubtitle
                   }
                 >
-                  Cadastre o horário de funcionamento.
+                  Cadastre o horário
+                  de funcionamento.
                 </Text>
               </View>
 
@@ -1285,10 +1377,19 @@ export default function WebHorariosScreen() {
               </Pressable>
             </View>
 
+            {/* CAMPOS COM ROLAGEM */}
+
             <ScrollView
+              style={
+                styles.modalScroll
+              }
+              contentContainerStyle={
+                styles.modalScrollContent
+              }
               showsVerticalScrollIndicator={
                 false
               }
+              keyboardShouldPersistTaps="handled"
             >
               <Text
                 style={styles.label}
@@ -1329,14 +1430,20 @@ export default function WebHorariosScreen() {
               />
 
               <View
-                style={
-                  styles.horariosLinha
-                }
+                style={[
+                  styles.horariosLinha,
+
+                  isMobile &&
+                    styles.horariosLinhaMobile,
+                ]}
               >
                 <View
-                  style={
-                    styles.campoHorario
-                  }
+                  style={[
+                    styles.campoHorario,
+
+                    isMobile &&
+                      styles.campoHorarioMobile,
+                  ]}
                 >
                   <Text
                     style={
@@ -1368,9 +1475,12 @@ export default function WebHorariosScreen() {
                 </View>
 
                 <View
-                  style={
-                    styles.campoHorario
-                  }
+                  style={[
+                    styles.campoHorario,
+
+                    isMobile &&
+                      styles.campoHorarioMobile,
+                  ]}
                 >
                   <Text
                     style={
@@ -1442,76 +1552,79 @@ export default function WebHorariosScreen() {
                   </Text>
                 </View>
               )}
+            </ScrollView>
 
-              <View
+            {/* BOTÕES FIXOS */}
+
+            <View
+              style={
+                styles.modalButtons
+              }
+            >
+              <Pressable
                 style={
-                  styles.modalButtons
+                  styles.cancelButton
                 }
+                onPress={
+                  fecharModal
+                }
+                disabled={salvando}
               >
-                <Pressable
+                <Text
                   style={
-                    styles.cancelButton
+                    styles.cancelText
                   }
-                  onPress={
-                    fecharModal
-                  }
-                  disabled={salvando}
                 >
+                  Cancelar
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.saveButton,
+
+                  salvando &&
+                    styles.saveButtonDisabled,
+                ]}
+                onPress={
+                  salvarHorario
+                }
+                disabled={salvando}
+              >
+                {salvando ? (
+                  <ActivityIndicator
+                    size="small"
+                    color="#FFFFFF"
+                  />
+                ) : (
                   <Text
                     style={
-                      styles.cancelText
+                      styles.saveText
                     }
                   >
-                    Cancelar
+                    {horarioEditando
+                      ? 'Salvar alterações'
+                      : 'Criar horário'}
                   </Text>
-                </Pressable>
-
-                <Pressable
-                  style={[
-                    styles.saveButton,
-
-                    salvando &&
-                      styles.saveButtonDisabled,
-                  ]}
-                  onPress={
-                    salvarHorario
-                  }
-                  disabled={salvando}
-                >
-                  {salvando ? (
-                    <ActivityIndicator
-                      size="small"
-                      color="#FFFFFF"
-                    />
-                  ) : (
-                    <Text
-                      style={
-                        styles.saveText
-                      }
-                    >
-                      {horarioEditando
-                        ? 'Salvar alterações'
-                        : 'Criar horário'}
-                    </Text>
-                  )}
-                </Pressable>
-              </View>
-            </ScrollView>
+                )}
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </>
   );
 }
 
-// =====================================================
-// RESUMO
-// =====================================================
+/* =====================================================
+   RESUMO
+===================================================== */
 
 function ResumoCard({
   titulo,
   valor,
   tipo,
+  isMobile,
 }: {
   titulo: string;
   valor: number;
@@ -1519,10 +1632,16 @@ function ResumoCard({
     | 'total'
     | 'ativo'
     | 'inativo';
+  isMobile: boolean;
 }) {
   return (
     <View
-      style={styles.resumoCard}
+      style={[
+        styles.resumoCard,
+
+        isMobile &&
+          styles.resumoCardMobile,
+      ]}
     >
       <View
         style={styles.resumoIcon}
@@ -1572,228 +1691,424 @@ function ResumoCard({
   );
 }
 
-// =====================================================
-// ESTILOS
-// =====================================================
+/* =====================================================
+   ESTILOS
+===================================================== */
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor:
-      colors.background,
-  },
-
-  content: {
-    flex: 1,
-    padding: 28,
-    minWidth: 0,
-  },
+  /* ===================================================
+     CABEÇALHO
+  =================================================== */
 
   header: {
+    width: '100%',
+
     flexDirection: 'row',
+
     alignItems: 'center',
+
     justifyContent:
       'space-between',
+
     marginBottom: 20,
   },
 
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerMobile: {
+    flexDirection: 'column',
+
+    alignItems: 'stretch',
+
+    marginBottom: 18,
+  },
+
+  headerTextArea: {
+    flex: 1,
+
+    minWidth: 0,
   },
 
   title: {
     fontSize: 28,
+
     fontWeight: '800',
+
     color: colors.text,
+  },
+
+  titleMobile: {
+    fontSize: 23,
   },
 
   subtitle: {
     fontSize: 13,
+
+    lineHeight: 19,
+
     color:
       colors.textSecondary,
+
     marginTop: 5,
+  },
+
+  headerActions: {
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    marginLeft: 20,
+  },
+
+  headerActionsMobile: {
+    width: '100%',
+
+    marginLeft: 0,
+
+    marginTop: 15,
+  },
+
+  headerButtonMobile: {
+    flex: 1,
+
+    minWidth: 0,
   },
 
   refreshButton: {
     height: 44,
+
     borderRadius: 11,
+
     borderWidth: 1,
+
     borderColor:
       colors.border,
+
     backgroundColor:
       colors.surface,
+
     paddingHorizontal: 14,
+
     flexDirection: 'row',
+
     alignItems: 'center',
-    justifyContent: 'center',
+
+    justifyContent:
+      'center',
+
     marginRight: 9,
   },
 
   refreshText: {
     color: colors.primary,
+
     fontSize: 10,
+
     fontWeight: '800',
+
     marginLeft: 6,
   },
 
   novoButton: {
     height: 44,
+
     borderRadius: 11,
+
     backgroundColor:
       colors.primary,
+
     paddingHorizontal: 16,
+
     flexDirection: 'row',
+
     alignItems: 'center',
-    justifyContent: 'center',
+
+    justifyContent:
+      'center',
   },
 
   novoButtonText: {
     color: '#FFFFFF',
-    fontSize: 12,
+
+    fontSize: 11,
+
     fontWeight: '800',
+
     marginLeft: 7,
   },
 
+  /* ===================================================
+     ERRO
+  =================================================== */
+
   erroPagina: {
+    width: '100%',
+
     backgroundColor:
       colors.dangerLight,
+
     borderRadius: 10,
+
     padding: 11,
+
     marginBottom: 15,
   },
 
   erroPaginaText: {
     color: colors.danger,
+
     fontSize: 10,
+
     fontWeight: '700',
   },
 
+  /* ===================================================
+     RESUMO
+  =================================================== */
+
   cards: {
+    width: '100%',
+
     flexDirection: 'row',
-    gap: 12,
+
+    flexWrap: 'wrap',
+
     marginBottom: 18,
+  },
+
+  cardsMobile: {
+    flexDirection: 'column',
   },
 
   resumoCard: {
     minWidth: 160,
+
     backgroundColor:
       colors.surface,
+
     borderRadius: 14,
+
     borderWidth: 1,
+
     borderColor:
       colors.border,
+
     padding: 14,
+
     flexDirection: 'row',
+
     alignItems: 'center',
+
+    marginRight: 12,
+
+    marginBottom: 10,
+  },
+
+  resumoCardMobile: {
+    width: '100%',
+
+    minWidth: 0,
+
+    marginRight: 0,
+
+    marginBottom: 9,
   },
 
   resumoIcon: {
     width: 40,
+
     height: 40,
+
     borderRadius: 11,
+
     backgroundColor:
       colors.primaryLight,
+
     alignItems: 'center',
-    justifyContent: 'center',
+
+    justifyContent:
+      'center',
+
     marginRight: 11,
   },
 
   resumoValor: {
     fontSize: 18,
+
     fontWeight: '900',
+
     color: colors.text,
   },
 
   resumoTitulo: {
     marginTop: 1,
+
     fontSize: 9,
+
     color:
       colors.textSecondary,
   },
 
+  /* ===================================================
+     BUSCA
+  =================================================== */
+
   searchBox: {
+    width: '100%',
+
     height: 44,
+
     maxWidth: 440,
+
     borderRadius: 11,
+
     borderWidth: 1,
+
     borderColor:
       colors.border,
+
     backgroundColor:
       colors.surface,
+
     flexDirection: 'row',
+
     alignItems: 'center',
+
     paddingHorizontal: 13,
+
     marginBottom: 16,
+  },
+
+  searchBoxMobile: {
+    maxWidth: '100%',
   },
 
   searchInput: {
     flex: 1,
+
+    minWidth: 0,
+
     height: 42,
+
     marginLeft: 8,
+
     fontSize: 12,
+
     color: colors.text,
+
     outlineStyle: 'none',
   } as any,
 
-  scroll: {
-    flex: 1,
+  /* ===================================================
+     LISTA
+  =================================================== */
+
+  lista: {
+    width: '100%',
   },
 
   horarioCard: {
+    width: '100%',
+
     backgroundColor:
       colors.surface,
+
     borderRadius: 15,
+
     borderWidth: 1,
+
     borderColor:
       colors.border,
+
     padding: 17,
+
     flexDirection: 'row',
+
     marginBottom: 11,
+  },
+
+  horarioCardMobile: {
+    flexDirection: 'column',
+
+    padding: 14,
   },
 
   horarioIcon: {
     width: 44,
+
     height: 44,
+
     borderRadius: 12,
+
     backgroundColor:
       colors.primaryLight,
+
     alignItems: 'center',
-    justifyContent: 'center',
+
+    justifyContent:
+      'center',
+
     marginRight: 14,
+  },
+
+  horarioIconMobile: {
+    marginRight: 0,
+
+    marginBottom: 12,
   },
 
   horarioInfo: {
     flex: 1,
+
     minWidth: 0,
   },
 
   cardTopo: {
     flexDirection: 'row',
+
     justifyContent:
       'space-between',
-    alignItems: 'flex-start',
+
+    alignItems:
+      'flex-start',
+  },
+
+  cardTopoMobile: {
+    flexDirection: 'column',
+
+    width: '100%',
   },
 
   tituloArea: {
     flex: 1,
+
+    minWidth: 0,
+
     flexDirection: 'row',
+
     alignItems: 'center',
+
     flexWrap: 'wrap',
   },
 
   horarioTitulo: {
     fontSize: 14,
+
     fontWeight: '800',
+
     color: colors.text,
+
     marginRight: 8,
+
+    marginBottom: 4,
   },
 
   statusBadge: {
     paddingHorizontal: 8,
+
     paddingVertical: 4,
+
     borderRadius: 7,
+
+    marginBottom: 4,
   },
 
   statusAtivo: {
@@ -1808,6 +2123,7 @@ const styles = StyleSheet.create({
 
   statusText: {
     fontSize: 8,
+
     fontWeight: '800',
   },
 
@@ -1822,216 +2138,473 @@ const styles = StyleSheet.create({
 
   acoes: {
     flexDirection: 'row',
+
     marginLeft: 12,
   },
 
+  acoesMobile: {
+    width: '100%',
+
+    marginLeft: 0,
+
+    marginTop: 10,
+
+    justifyContent:
+      'flex-start',
+  },
+
   iconButton: {
-    width: 34,
-    height: 34,
+    width: 38,
+
+    height: 38,
+
     borderRadius: 9,
+
     backgroundColor:
       colors.background,
+
+    borderWidth: 1,
+
+    borderColor:
+      colors.border,
+
     alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 4,
+
+    justifyContent:
+      'center',
+
+    marginRight: 6,
   },
 
   dadosLinha: {
     flexDirection: 'row',
+
     flexWrap: 'wrap',
+
     marginTop: 10,
+  },
+
+  dadosLinhaMobile: {
+    flexDirection: 'column',
+
+    width: '100%',
+
+    marginTop: 13,
   },
 
   dadoBox: {
     minWidth: 180,
+
     marginRight: 30,
+
     marginBottom: 5,
+  },
+
+  dadoBoxMobile: {
+    width: '100%',
+
+    minWidth: 0,
+
+    marginRight: 0,
+
+    marginBottom: 11,
   },
 
   dadoLabel: {
     fontSize: 8,
+
     fontWeight: '700',
+
     color:
       colors.textSecondary,
   },
 
   dadoValor: {
     fontSize: 11,
+
     fontWeight: '700',
+
     color: colors.text,
+
     marginTop: 2,
   },
 
   observacao: {
     marginTop: 7,
+
     fontSize: 10,
+
     lineHeight: 16,
+
     color:
       colors.textSecondary,
   },
 
+  /* ===================================================
+     VAZIO
+  =================================================== */
+
   vazio: {
+    width: '100%',
+
     minHeight: 300,
+
     alignItems: 'center',
-    justifyContent: 'center',
+
+    justifyContent:
+      'center',
+
+    backgroundColor:
+      colors.surface,
+
+    borderRadius: 14,
+
+    borderWidth: 1,
+
+    borderColor:
+      colors.border,
+
+    padding: 20,
   },
 
   vazioTitle: {
     marginTop: 10,
+
     fontSize: 14,
+
     fontWeight: '800',
+
     color: colors.text,
+
+    textAlign: 'center',
   },
 
   vazioText: {
     marginTop: 5,
+
     fontSize: 10,
+
     color:
       colors.textSecondary,
+
+    textAlign: 'center',
   },
 
   carregandoText: {
     marginTop: 10,
+
     fontSize: 10,
+
     color:
       colors.textSecondary,
   },
 
+  /* ===================================================
+     MODAL
+  =================================================== */
+
   overlay: {
     flex: 1,
+
     backgroundColor:
       'rgba(15, 23, 42, 0.45)',
+
     alignItems: 'center',
-    justifyContent: 'center',
+
+    justifyContent:
+      'center',
+
     padding: 20,
+  },
+
+  overlayMobile: {
+    padding: 10,
   },
 
   modal: {
     width: '100%',
+
     maxWidth: 580,
-    maxHeight: '90%',
+
+    height: '90%',
+
+    maxHeight: 700,
+
     backgroundColor:
       colors.surface,
+
     borderRadius: 18,
+
+    borderWidth: 1,
+
+    borderColor:
+      colors.border,
+
     padding: 22,
+
+    overflow: 'hidden',
+  },
+
+  modalMobile: {
+    width: '100%',
+
+    maxWidth: '100%',
+
+    height: '94%',
+
+    maxHeight: '94%',
+
+    borderRadius: 14,
+
+    padding: 14,
   },
 
   modalHeader: {
+    width: '100%',
+
     flexDirection: 'row',
-    alignItems: 'flex-start',
+
+    alignItems:
+      'flex-start',
+
     justifyContent:
       'space-between',
-    marginBottom: 12,
+
+    marginBottom: 10,
+
+    flexShrink: 0,
+  },
+
+  modalHeaderText: {
+    flex: 1,
+
+    minWidth: 0,
+
+    paddingRight: 10,
   },
 
   modalTitle: {
     fontSize: 20,
+
     fontWeight: '800',
+
     color: colors.text,
   },
 
   modalSubtitle: {
     fontSize: 10,
+
     color:
       colors.textSecondary,
+
     marginTop: 3,
   },
 
   closeButton: {
     width: 36,
+
     height: 36,
+
     borderRadius: 9,
+
     backgroundColor:
       colors.background,
+
+    borderWidth: 1,
+
+    borderColor:
+      colors.border,
+
     alignItems: 'center',
-    justifyContent: 'center',
+
+    justifyContent:
+      'center',
+
+    flexShrink: 0,
+  },
+
+  modalScroll: {
+    flex: 1,
+
+    minHeight: 0,
+
+    width: '100%',
+  },
+
+  modalScrollContent: {
+    flexGrow: 1,
+
+    paddingBottom: 10,
   },
 
   label: {
     fontSize: 11,
+
     fontWeight: '700',
+
     color: colors.text,
+
     marginBottom: 6,
+
     marginTop: 10,
   },
 
   input: {
     width: '100%',
+
     minHeight: 45,
+
     borderRadius: 10,
+
     borderWidth: 1,
+
     borderColor:
       colors.border,
+
     backgroundColor:
       colors.background,
+
     paddingHorizontal: 13,
+
     fontSize: 12,
+
     color: colors.text,
+
     outlineStyle: 'none',
   } as any,
 
   horariosLinha: {
+    width: '100%',
+
     flexDirection: 'row',
-    gap: 10,
+
+    marginTop: 2,
+  },
+
+  horariosLinhaMobile: {
+    flexDirection: 'column',
   },
 
   campoHorario: {
     flex: 1,
+
+    minWidth: 0,
+
+    marginRight: 10,
+  },
+
+  campoHorarioMobile: {
+    width: '100%',
+
+    flex: 0,
+
+    marginRight: 0,
   },
 
   textarea: {
     minHeight: 100,
+
     paddingTop: 12,
+
+    paddingBottom: 12,
   },
 
   erroBox: {
     backgroundColor:
       colors.dangerLight,
+
     borderRadius: 9,
+
     padding: 10,
+
     marginTop: 12,
   },
 
   erroText: {
     color: colors.danger,
+
     fontSize: 10,
+
     fontWeight: '700',
   },
 
+  /* ===================================================
+     BOTÕES FIXOS MODAL
+  =================================================== */
+
   modalButtons: {
+    width: '100%',
+
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 20,
+
+    alignItems: 'center',
+
+    paddingTop: 12,
+
+    marginTop: 6,
+
+    borderTopWidth: 1,
+
+    borderTopColor:
+      colors.border,
+
+    flexShrink: 0,
   },
 
   cancelButton: {
-    height: 42,
-    paddingHorizontal: 16,
+    flex: 1,
+
+    minWidth: 0,
+
+    height: 44,
+
     borderRadius: 10,
+
     borderWidth: 1,
+
     borderColor:
       colors.border,
+
+    backgroundColor:
+      colors.background,
+
     alignItems: 'center',
-    justifyContent: 'center',
+
+    justifyContent:
+      'center',
+
     marginRight: 8,
+
+    paddingHorizontal: 8,
   },
 
   cancelText: {
     color:
       colors.textSecondary,
+
     fontSize: 11,
+
     fontWeight: '700',
   },
 
   saveButton: {
-    minWidth: 125,
-    height: 42,
-    paddingHorizontal: 17,
+    flex: 1.35,
+
+    minWidth: 0,
+
+    height: 44,
+
+    paddingHorizontal: 10,
+
     borderRadius: 10,
+
     backgroundColor:
       colors.primary,
+
     alignItems: 'center',
-    justifyContent: 'center',
+
+    justifyContent:
+      'center',
   },
 
   saveButtonDisabled: {
@@ -2040,7 +2613,11 @@ const styles = StyleSheet.create({
 
   saveText: {
     color: '#FFFFFF',
+
     fontSize: 11,
+
     fontWeight: '800',
+
+    textAlign: 'center',
   },
 });

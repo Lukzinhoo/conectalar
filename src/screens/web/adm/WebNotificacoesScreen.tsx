@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -26,16 +27,18 @@ import {
   Search,
   Send,
   Trash2,
+  UserRound,
   X,
 } from 'lucide-react-native';
 
 import WebSidebar from '../../../components/WebSidebar';
+import WebLayout from '../../../components/WebLayout';
 import { colors } from '../../../theme/theme';
 import { supabase } from '../../../services/supabase';
 
-/* =====================================================
-   TIPOS
-===================================================== */
+// =====================================================
+// TIPOS
+// =====================================================
 
 type TipoNotificacao =
   | 'sistema'
@@ -59,6 +62,13 @@ type NotificacaoBanco = {
   destinatario_tipo: DestinatarioTipo;
 };
 
+type PerfilMorador = {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  tipo: string;
+};
+
 type NotificacaoAgrupada = {
   chave: string;
   titulo: string;
@@ -69,18 +79,15 @@ type NotificacaoAgrupada = {
   lidas: number;
   ids: string[];
   destinatario_tipo: DestinatarioTipo;
+
+  // NOVO
+  morador_id: string | null;
+  nome_morador: string | null;
 };
 
-type PerfilMorador = {
-  id: string;
-  nome: string;
-  ativo: boolean;
-  tipo: string;
-};
-
-/* =====================================================
-   FUNÇÕES AUXILIARES
-===================================================== */
+// =====================================================
+// FUNÇÕES AUXILIARES
+// =====================================================
 
 function tipoLabel(
   tipo: TipoNotificacao
@@ -127,11 +134,21 @@ function formatarData(
   }
 }
 
-/* =====================================================
-   TELA
-===================================================== */
+// =====================================================
+// TELA
+// =====================================================
 
 export default function WebNotificacoesScreen() {
+  const { width } =
+    useWindowDimensions();
+
+  const isMobile =
+    width < 768;
+
+  const isTablet =
+    width >= 768 &&
+    width < 1100;
+
   const [
     notificacoesAdministracao,
     setNotificacoesAdministracao,
@@ -157,8 +174,10 @@ export default function WebNotificacoesScreen() {
   const [titulo, setTitulo] =
     useState('');
 
-  const [mensagem, setMensagem] =
-    useState('');
+  const [
+    mensagem,
+    setMensagem,
+  ] = useState('');
 
   const [tipo, setTipo] =
     useState<TipoNotificacao>(
@@ -178,8 +197,10 @@ export default function WebNotificacoesScreen() {
     setAtualizando,
   ] = useState(false);
 
-  const [salvando, setSalvando] =
-    useState(false);
+  const [
+    salvando,
+    setSalvando,
+  ] = useState(false);
 
   const [
     excluindo,
@@ -193,17 +214,17 @@ export default function WebNotificacoesScreen() {
       'recebidas' | 'enviadas'
     >('recebidas');
 
-  /* ===================================================
-     CARREGAMENTO
-  =================================================== */
+  // ===================================================
+  // CARREGAMENTO INICIAL
+  // ===================================================
 
   useEffect(() => {
     carregarNotificacoes(false);
   }, []);
 
-  /* ===================================================
-     VERIFICAR ADMIN
-  =================================================== */
+  // ===================================================
+  // VERIFICAR ADMIN
+  // ===================================================
 
   async function verificarAdministrador() {
     const {
@@ -218,6 +239,7 @@ export default function WebNotificacoesScreen() {
     ) {
       return {
         permitido: false,
+
         mensagem:
           'Não foi possível identificar o administrador.',
       };
@@ -240,6 +262,7 @@ export default function WebNotificacoesScreen() {
     ) {
       return {
         permitido: false,
+
         mensagem:
           'Perfil administrativo não encontrado.',
       };
@@ -264,12 +287,16 @@ export default function WebNotificacoesScreen() {
     };
   }
 
-  /* ===================================================
-     AGRUPAR NOTIFICAÇÕES
-  =================================================== */
+  // ===================================================
+  // AGRUPAR NOTIFICAÇÕES
+  // ===================================================
 
   function agruparNotificacoes(
-    registros: NotificacaoBanco[]
+    registros: NotificacaoBanco[],
+    nomesMoradores: Map<
+      string,
+      string
+    >
   ) {
     const grupos =
       new Map<
@@ -278,7 +305,7 @@ export default function WebNotificacoesScreen() {
       >();
 
     registros.forEach(
-      (item) => {
+      item => {
         const data =
           new Date(
             item.criado_em
@@ -288,6 +315,14 @@ export default function WebNotificacoesScreen() {
           0
         );
 
+        /*
+         * Para notificações enviadas em massa,
+         * NÃO colocamos morador_id na chave.
+         *
+         * Assim uma notificação enviada para
+         * todos continua aparecendo como apenas
+         * um card.
+         */
         const chave = [
           item.titulo,
           item.mensagem,
@@ -312,6 +347,22 @@ export default function WebNotificacoesScreen() {
             item.id
           );
 
+          /*
+           * Se houver mais de um morador,
+           * o card deixa de representar
+           * uma única pessoa.
+           */
+          if (
+            existente.morador_id !==
+            item.morador_id
+          ) {
+            existente.morador_id =
+              null;
+
+            existente.nome_morador =
+              null;
+          }
+
           return;
         }
 
@@ -319,6 +370,7 @@ export default function WebNotificacoesScreen() {
           chave,
           {
             chave,
+
             titulo:
               item.titulo,
 
@@ -344,6 +396,14 @@ export default function WebNotificacoesScreen() {
 
             destinatario_tipo:
               item.destinatario_tipo,
+
+            morador_id:
+              item.morador_id,
+
+            nome_morador:
+              nomesMoradores.get(
+                item.morador_id
+              ) ?? null,
           }
         );
       }
@@ -362,9 +422,9 @@ export default function WebNotificacoesScreen() {
     );
   }
 
-  /* ===================================================
-     CARREGAR
-  =================================================== */
+  // ===================================================
+  // CARREGAR
+  // ===================================================
 
   async function carregarNotificacoes(
     mostrarAtualizando = true
@@ -401,9 +461,56 @@ export default function WebNotificacoesScreen() {
         return;
       }
 
-      /* -----------------------------------------------
-         NOTIFICAÇÕES RECEBIDAS PELA ADMINISTRAÇÃO
-      ------------------------------------------------ */
+      // ===============================================
+      // BUSCAR NOMES DOS MORADORES
+      // ===============================================
+
+      const {
+        data: perfisData,
+        error: perfisError,
+      } = await supabase
+        .from('perfis')
+        .select(
+          'id, nome, tipo, ativo'
+        )
+        .eq(
+          'tipo',
+          'morador'
+        );
+
+      if (perfisError) {
+        console.error(
+          'ERRO AO BUSCAR MORADORES:',
+          perfisError
+        );
+      }
+
+      const mapaNomes =
+        new Map<
+          string,
+          string
+        >();
+
+      (
+        (perfisData ??
+          []) as PerfilMorador[]
+      ).forEach(
+        perfil => {
+          if (
+            perfil.id &&
+            perfil.nome
+          ) {
+            mapaNomes.set(
+              perfil.id,
+              perfil.nome
+            );
+          }
+        }
+      );
+
+      // ===============================================
+      // RECEBIDAS PELA ADMINISTRAÇÃO
+      // ===============================================
 
       const {
         data:
@@ -451,9 +558,9 @@ export default function WebNotificacoesScreen() {
         return;
       }
 
-      /* -----------------------------------------------
-         NOTIFICAÇÕES ENVIADAS AOS MORADORES
-      ------------------------------------------------ */
+      // ===============================================
+      // ENVIADAS AOS MORADORES
+      // ===============================================
 
       const {
         data:
@@ -515,13 +622,15 @@ export default function WebNotificacoesScreen() {
 
       setNotificacoesAdministracao(
         agruparNotificacoes(
-          recebidas
+          recebidas,
+          mapaNomes
         )
       );
 
       setNotificacoesEnviadas(
         agruparNotificacoes(
-          enviadas
+          enviadas,
+          mapaNomes
         )
       );
     } catch (error) {
@@ -539,9 +648,9 @@ export default function WebNotificacoesScreen() {
     }
   }
 
-  /* ===================================================
-     ABRIR MODAL
-  =================================================== */
+  // ===================================================
+  // MODAL
+  // ===================================================
 
   function abrirNovaNotificacao() {
     setTitulo('');
@@ -573,9 +682,9 @@ export default function WebNotificacoesScreen() {
     setErro('');
   }
 
-  /* ===================================================
-     ENVIAR NOTIFICAÇÃO AOS MORADORES
-  =================================================== */
+  // ===================================================
+  // ENVIAR
+  // ===================================================
 
   async function enviarNotificacao() {
     const tituloLimpo =
@@ -672,15 +781,9 @@ export default function WebNotificacoesScreen() {
       const criadoEm =
         new Date().toISOString();
 
-      /*
-       * IMPORTANTE:
-       * notificações criadas pelo ADM
-       * são destinadas aos moradores.
-       */
-
       const registros =
         listaMoradores.map(
-          (morador) => ({
+          morador => ({
             morador_id:
               morador.id,
 
@@ -760,9 +863,9 @@ export default function WebNotificacoesScreen() {
     }
   }
 
-  /* ===================================================
-     EXCLUIR
-  =================================================== */
+  // ===================================================
+  // EXCLUIR
+  // ===================================================
 
   async function excluirNotificacao(
     notificacao:
@@ -869,9 +972,9 @@ export default function WebNotificacoesScreen() {
     );
   }
 
-  /* ===================================================
-     LISTA ATUAL
-  =================================================== */
+  // ===================================================
+  // FILTROS
+  // ===================================================
 
   const listaAtual =
     aba === 'recebidas'
@@ -890,7 +993,7 @@ export default function WebNotificacoesScreen() {
       }
 
       return listaAtual.filter(
-        (item) =>
+        item =>
           item.titulo
             .toLowerCase()
             .includes(
@@ -903,6 +1006,14 @@ export default function WebNotificacoesScreen() {
             ) ||
           tipoLabel(
             item.tipo
+          )
+            .toLowerCase()
+            .includes(
+              termo
+            ) ||
+          (
+            item.nome_morador ??
+            ''
           )
             .toLowerCase()
             .includes(
@@ -920,117 +1031,132 @@ export default function WebNotificacoesScreen() {
   const totalEnviadas =
     notificacoesEnviadas.length;
 
-  /* ===================================================
-     INTERFACE
-  =================================================== */
+  // ===================================================
+  // INTERFACE
+  // ===================================================
 
   return (
-    <View
-      style={
-        styles.container
+    <WebLayout
+      sidebar={
+        <WebSidebar
+          active="notificacoes"
+        />
       }
     >
-      <WebSidebar
-        active="notificacoes"
-      />
+      {/* CABEÇALHO */}
 
       <View
-        style={
-          styles.content
-        }
-      >
-        {/* CABEÇALHO */}
+        style={[
+          styles.header,
 
+          isMobile &&
+            styles.headerMobile,
+        ]}
+      >
         <View
           style={
-            styles.header
+            isMobile
+              ? styles.headerTextMobile
+              : undefined
           }
         >
-          <View>
-            <Text
-              style={
-                styles.title
-              }
-            >
-              Notificações
-            </Text>
+          <Text
+            style={[
+              styles.title,
 
-            <Text
-              style={
-                styles.subtitle
-              }
-            >
-              Acompanhe solicitações e envie avisos aos moradores.
-            </Text>
-          </View>
+              isMobile &&
+                styles.titleMobile,
+            ]}
+          >
+            Notificações
+          </Text>
 
-          <View
+          <Text
             style={
-              styles.headerActions
+              styles.subtitle
             }
           >
-            <Pressable
-              style={
-                styles.refreshButton
-              }
-              onPress={() =>
-                carregarNotificacoes()
-              }
-              disabled={
-                carregando ||
-                atualizando
-              }
-            >
-              {atualizando ? (
-                <ActivityIndicator
-                  size="small"
-                  color={
-                    colors.primary
-                  }
-                />
-              ) : (
-                <RefreshCw
-                  size={16}
-                  color={
-                    colors.primary
-                  }
-                />
-              )}
-
-              <Text
-                style={
-                  styles.refreshText
-                }
-              >
-                Atualizar
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={
-                styles.novaButton
-              }
-              onPress={
-                abrirNovaNotificacao
-              }
-            >
-              <Plus
-                size={18}
-                color="#FFFFFF"
-              />
-
-              <Text
-                style={
-                  styles.novaButtonText
-                }
-              >
-                Nova notificação
-              </Text>
-            </Pressable>
-          </View>
+            Acompanhe solicitações e envie avisos aos moradores.
+          </Text>
         </View>
 
-        {!!erro && (
+        <View
+          style={[
+            styles.headerActions,
+
+            isMobile &&
+              styles.headerActionsMobile,
+          ]}
+        >
+          <Pressable
+            style={[
+              styles.refreshButton,
+
+              isMobile &&
+                styles.actionButtonMobile,
+            ]}
+            onPress={() =>
+              carregarNotificacoes()
+            }
+            disabled={
+              carregando ||
+              atualizando
+            }
+          >
+            {atualizando ? (
+              <ActivityIndicator
+                size="small"
+                color={
+                  colors.primary
+                }
+              />
+            ) : (
+              <RefreshCw
+                size={16}
+                color={
+                  colors.primary
+                }
+              />
+            )}
+
+            <Text
+              style={
+                styles.refreshText
+              }
+            >
+              Atualizar
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.novaButton,
+
+              isMobile &&
+                styles.actionButtonMobile,
+            ]}
+            onPress={
+              abrirNovaNotificacao
+            }
+          >
+            <Plus
+              size={18}
+              color="#FFFFFF"
+            />
+
+            <Text
+              style={
+                styles.novaButtonText
+              }
+            >
+              Nova notificação
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {!!erro &&
+        !modalAberto && (
           <View
             style={
               styles.erroBox
@@ -1046,420 +1172,480 @@ export default function WebNotificacoesScreen() {
           </View>
         )}
 
-        {/* RESUMO */}
+      {/* RESUMO */}
 
-        <View
-          style={
-            styles.cards
+      <View
+        style={[
+          styles.cards,
+
+          (isMobile ||
+            isTablet) &&
+            styles.cardsResponsive,
+        ]}
+      >
+        <ResumoCard
+          titulo="Recebidas"
+          valor={
+            totalRecebidas
+          }
+          tipo="recebida"
+          responsive={
+            isMobile ||
+            isTablet
+          }
+        />
+
+        <ResumoCard
+          titulo="Enviadas"
+          valor={
+            totalEnviadas
+          }
+          tipo="enviada"
+          responsive={
+            isMobile ||
+            isTablet
+          }
+        />
+      </View>
+
+      {/* ABAS */}
+
+      <View
+        style={[
+          styles.abas,
+
+          isMobile &&
+            styles.abasMobile,
+        ]}
+      >
+        <Pressable
+          style={[
+            styles.abaButton,
+
+            isMobile &&
+              styles.abaButtonMobile,
+
+            aba ===
+              'recebidas' &&
+              styles.abaButtonAtiva,
+          ]}
+          onPress={() =>
+            setAba(
+              'recebidas'
+            )
           }
         >
-          <ResumoCard
-            titulo="Recebidas"
-            valor={
-              totalRecebidas
+          <BellRing
+            size={17}
+            color={
+              aba ===
+              'recebidas'
+                ? '#FFFFFF'
+                : colors.primary
             }
-            tipo="recebida"
           />
 
-          <ResumoCard
-            titulo="Enviadas"
-            valor={
-              totalEnviadas
+          <Text
+            numberOfLines={
+              isMobile
+                ? 2
+                : 1
             }
-            tipo="enviada"
-          />
-        </View>
-
-        {/* ABAS */}
-
-        <View
-          style={
-            styles.abas
-          }
-        >
-          <Pressable
             style={[
-              styles.abaButton,
+              styles.abaText,
 
               aba ===
                 'recebidas' &&
-                styles.abaButtonAtiva,
+                styles.abaTextAtiva,
             ]}
-            onPress={() =>
-              setAba(
-                'recebidas'
-              )
-            }
           >
-            <BellRing
-              size={17}
-              color={
-                aba ===
-                'recebidas'
-                  ? '#FFFFFF'
-                  : colors.primary
-              }
-            />
+            Administração (
+            {totalRecebidas})
+          </Text>
+        </Pressable>
 
-            <Text
-              style={[
-                styles.abaText,
+        <Pressable
+          style={[
+            styles.abaButton,
 
-                aba ===
-                  'recebidas' &&
-                  styles.abaTextAtiva,
-              ]}
-            >
-              Administração (
-              {
-                totalRecebidas
-              }
-              )
-            </Text>
-          </Pressable>
+            isMobile &&
+              styles.abaButtonMobile,
 
-          <Pressable
+            aba ===
+              'enviadas' &&
+              styles.abaButtonAtiva,
+          ]}
+          onPress={() =>
+            setAba(
+              'enviadas'
+            )
+          }
+        >
+          <Send
+            size={16}
+            color={
+              aba ===
+              'enviadas'
+                ? '#FFFFFF'
+                : colors.primary
+            }
+          />
+
+          <Text
+            numberOfLines={
+              isMobile
+                ? 2
+                : 1
+            }
             style={[
-              styles.abaButton,
+              styles.abaText,
 
               aba ===
                 'enviadas' &&
-                styles.abaButtonAtiva,
+                styles.abaTextAtiva,
             ]}
-            onPress={() =>
-              setAba(
-                'enviadas'
-              )
+          >
+            Enviadas aos moradores (
+            {totalEnviadas})
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* BUSCA */}
+
+      <View
+        style={[
+          styles.searchRow,
+
+          isMobile &&
+            styles.searchRowMobile,
+        ]}
+      >
+        <View
+          style={[
+            styles.searchBox,
+
+            isMobile &&
+              styles.searchBoxMobile,
+          ]}
+        >
+          <Search
+            size={18}
+            color={
+              colors.textSecondary
+            }
+          />
+
+          <TextInput
+            value={busca}
+            onChangeText={
+              setBusca
+            }
+            placeholder="Buscar por notificação ou morador..."
+            placeholderTextColor={
+              colors.textLight
+            }
+            style={
+              styles.searchInput
+            }
+          />
+        </View>
+
+        <Text
+          style={[
+            styles.resultadoText,
+
+            isMobile &&
+              styles.resultadoTextMobile,
+          ]}
+        >
+          {
+            notificacoesFiltradas.length
+          }{' '}
+          {notificacoesFiltradas.length ===
+          1
+            ? 'notificação'
+            : 'notificações'}
+        </Text>
+      </View>
+
+      {/* LISTA */}
+
+      <View
+        style={
+          styles.listaArea
+        }
+      >
+        {carregando ? (
+          <View
+            style={
+              styles.vazio
             }
           >
-            <Send
-              size={16}
+            <ActivityIndicator
+              size="large"
               color={
-                aba ===
-                'enviadas'
-                  ? '#FFFFFF'
-                  : colors.primary
+                colors.primary
               }
             />
 
             <Text
-              style={[
-                styles.abaText,
-
-                aba ===
-                  'enviadas' &&
-                  styles.abaTextAtiva,
-              ]}
-            >
-              Enviadas aos moradores (
-              {
-                totalEnviadas
+              style={
+                styles.vazioSubtitulo
               }
-              )
+            >
+              Carregando notificações...
             </Text>
-          </Pressable>
-        </View>
-
-        {/* BUSCA */}
-
-        <View
-          style={
-            styles.searchRow
-          }
-        >
+          </View>
+        ) : notificacoesFiltradas.length ===
+          0 ? (
           <View
             style={
-              styles.searchBox
+              styles.vazio
             }
           >
-            <Search
-              size={18}
+            <Bell
+              size={42}
               color={
-                colors.textSecondary
-              }
-            />
-
-            <TextInput
-              value={busca}
-              onChangeText={
-                setBusca
-              }
-              placeholder="Buscar notificação..."
-              placeholderTextColor={
                 colors.textLight
               }
-              style={
-                styles.searchInput
-              }
             />
+
+            <Text
+              style={
+                styles.vazioTitle
+              }
+            >
+              Nenhuma notificação encontrada
+            </Text>
+
+            <Text
+              style={
+                styles.vazioSubtitulo
+              }
+            >
+              {aba ===
+              'recebidas'
+                ? 'As solicitações dos moradores aparecerão aqui.'
+                : 'As notificações enviadas aos moradores aparecerão aqui.'}
+            </Text>
           </View>
-
-          <Text
-            style={
-              styles.resultadoText
-            }
-          >
-            {
-              notificacoesFiltradas.length
-            }{' '}
-            {notificacoesFiltradas.length ===
-            1
-              ? 'notificação'
-              : 'notificações'}
-          </Text>
-        </View>
-
-        {/* LISTA */}
-
-        <ScrollView
-          style={
-            styles.scroll
-          }
-          showsVerticalScrollIndicator={
-            false
-          }
-        >
-          {carregando ? (
-            <View
-              style={
-                styles.vazio
-              }
-            >
-              <ActivityIndicator
-                size="large"
-                color={
-                  colors.primary
+        ) : (
+          notificacoesFiltradas.map(
+            notificacao => (
+              <View
+                key={
+                  notificacao.chave
                 }
-              />
+                style={[
+                  styles.notificacaoCard,
 
-              <Text
-                style={
-                  styles.vazioSubtitulo
-                }
+                  isMobile &&
+                    styles.notificacaoCardMobile,
+                ]}
               >
-                Carregando notificações...
-              </Text>
-            </View>
-          ) : notificacoesFiltradas.length ===
-            0 ? (
-            <View
-              style={
-                styles.vazio
-              }
-            >
-              <Bell
-                size={42}
-                color={
-                  colors.textLight
-                }
-              />
-
-              <Text
-                style={
-                  styles.vazioTitle
-                }
-              >
-                Nenhuma notificação encontrada
-              </Text>
-
-              <Text
-                style={
-                  styles.vazioSubtitulo
-                }
-              >
-                {aba ===
-                'recebidas'
-                  ? 'As solicitações dos moradores aparecerão aqui.'
-                  : 'As notificações enviadas aos moradores aparecerão aqui.'}
-              </Text>
-            </View>
-          ) : (
-            notificacoesFiltradas.map(
-              (
-                notificacao
-              ) => (
                 <View
-                  key={
-                    notificacao.chave
-                  }
+                  style={[
+                    styles.notificacaoIcon,
+
+                    isMobile &&
+                      styles.notificacaoIconMobile,
+                  ]}
+                >
+                  {notificacao.tipo ===
+                  'reserva' ? (
+                    <CalendarCheck
+                      size={21}
+                      color={
+                        colors.primary
+                      }
+                    />
+                  ) : (
+                    <BellRing
+                      size={21}
+                      color={
+                        colors.primary
+                      }
+                    />
+                  )}
+                </View>
+
+                <View
                   style={
-                    styles.notificacaoCard
+                    styles.notificacaoInfo
                   }
                 >
-                  <View
-                    style={
-                      styles.notificacaoIcon
-                    }
-                  >
-                    {notificacao.tipo ===
-                    'reserva' ? (
-                      <CalendarCheck
-                        size={
-                          21
-                        }
-                        color={
-                          colors.primary
-                        }
-                      />
-                    ) : (
-                      <BellRing
-                        size={
-                          21
-                        }
-                        color={
-                          colors.primary
-                        }
-                      />
-                    )}
-                  </View>
+                  {/* NOME DO MORADOR */}
 
-                  <View
-                    style={
-                      styles.notificacaoInfo
-                    }
-                  >
-                    <View
-                      style={
-                        styles.cardTopo
-                      }
-                    >
+                  {notificacao.quantidade ===
+                    1 &&
+                    notificacao.nome_morador && (
                       <View
                         style={
-                          styles.tituloArea
+                          styles.moradorArea
                         }
                       >
+                        <UserRound
+                          size={14}
+                          color={
+                            colors.primary
+                          }
+                        />
+
                         <Text
                           style={
-                            styles.notificacaoTitulo
+                            styles.moradorNome
                           }
                         >
                           {
-                            notificacao.titulo
+                            notificacao.nome_morador
                           }
                         </Text>
-
-                        <View
-                          style={
-                            styles.tipoBadge
-                          }
-                        >
-                          <Text
-                            style={
-                              styles.tipoText
-                            }
-                          >
-                            {tipoLabel(
-                              notificacao.tipo
-                            )}
-                          </Text>
-                        </View>
                       </View>
+                    )}
 
-                      <Pressable
-                        style={
-                          styles.deleteButton
-                        }
-                        disabled={
-                          excluindo ===
-                          notificacao.chave
-                        }
-                        onPress={() =>
-                          excluirNotificacao(
-                            notificacao
-                          )
-                        }
-                      >
-                        {excluindo ===
-                        notificacao.chave ? (
-                          <ActivityIndicator
-                            size="small"
-                            color={
-                              colors.danger
-                            }
-                          />
-                        ) : (
-                          <Trash2
-                            size={
-                              16
-                            }
-                            color={
-                              colors.danger
-                            }
-                          />
-                        )}
-                      </Pressable>
-                    </View>
-
-                    <Text
-                      style={
-                        styles.notificacaoMensagem
-                      }
-                    >
-                      {
-                        notificacao.mensagem
-                      }
-                    </Text>
-
+                  <View
+                    style={
+                      styles.cardTopo
+                    }
+                  >
                     <View
                       style={
-                        styles.cardFooter
+                        styles.tituloArea
                       }
                     >
                       <Text
                         style={
-                          styles.dataText
+                          styles.notificacaoTitulo
                         }
                       >
-                        {formatarData(
-                          notificacao.criado_em
-                        )}
+                        {
+                          notificacao.titulo
+                        }
                       </Text>
 
-                      {aba ===
-                      'enviadas' ? (
+                      <View
+                        style={
+                          styles.tipoBadge
+                        }
+                      >
                         <Text
                           style={
-                            styles.destinatariosText
+                            styles.tipoText
                           }
                         >
-                          Enviada para{' '}
-                          {
-                            notificacao.quantidade
-                          }{' '}
-                          {notificacao.quantidade ===
-                          1
-                            ? 'morador'
-                            : 'moradores'}
-                          {' • '}
-                          {
-                            notificacao.lidas
-                          }{' '}
-                          {notificacao.lidas ===
-                          1
-                            ? 'leitura'
-                            : 'leituras'}
+                          {tipoLabel(
+                            notificacao.tipo
+                          )}
                         </Text>
-                      ) : (
-                        <Text
-                          style={
-                            styles.destinatariosText
-                          }
-                        >
-                          Destinada à administração
-                        </Text>
-                      )}
+                      </View>
                     </View>
+
+                    <Pressable
+                      style={
+                        styles.deleteButton
+                      }
+                      disabled={
+                        excluindo ===
+                        notificacao.chave
+                      }
+                      onPress={() =>
+                        excluirNotificacao(
+                          notificacao
+                        )
+                      }
+                    >
+                      {excluindo ===
+                      notificacao.chave ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={
+                            colors.danger
+                          }
+                        />
+                      ) : (
+                        <Trash2
+                          size={16}
+                          color={
+                            colors.danger
+                          }
+                        />
+                      )}
+                    </Pressable>
+                  </View>
+
+                  <Text
+                    style={
+                      styles.notificacaoMensagem
+                    }
+                  >
+                    {
+                      notificacao.mensagem
+                    }
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.cardFooter,
+
+                      isMobile &&
+                        styles.cardFooterMobile,
+                    ]}
+                  >
+                    <Text
+                      style={
+                        styles.dataText
+                      }
+                    >
+                      {formatarData(
+                        notificacao.criado_em
+                      )}
+                    </Text>
+
+                    {aba ===
+                    'enviadas' ? (
+                      <Text
+                        style={
+                          styles.destinatariosText
+                        }
+                      >
+                        Enviada para{' '}
+                        {
+                          notificacao.quantidade
+                        }{' '}
+                        {notificacao.quantidade ===
+                        1
+                          ? 'morador'
+                          : 'moradores'}
+                        {' • '}
+                        {
+                          notificacao.lidas
+                        }{' '}
+                        {notificacao.lidas ===
+                        1
+                          ? 'leitura'
+                          : 'leituras'}
+                      </Text>
+                    ) : (
+                      <Text
+                        style={
+                          styles.destinatariosText
+                        }
+                      >
+                        {notificacao.nome_morador
+                          ? `Enviada por ${notificacao.nome_morador}`
+                          : 'Destinada à administração'}
+                      </Text>
+                    )}
                   </View>
                 </View>
-              )
+              </View>
             )
-          )}
-        </ScrollView>
+          )
+        )}
       </View>
 
-      {/* =================================================
-          MODAL
-      ================================================= */}
+      {/* MODAL */}
 
       <Modal
         visible={
@@ -1472,25 +1658,38 @@ export default function WebNotificacoesScreen() {
         }
       >
         <View
-          style={
-            styles.overlay
-          }
+          style={[
+            styles.overlay,
+
+            isMobile &&
+              styles.overlayMobile,
+          ]}
         >
           <View
-            style={
-              styles.modal
-            }
+            style={[
+              styles.modal,
+
+              isMobile &&
+                styles.modalMobile,
+            ]}
           >
             <View
               style={
                 styles.modalHeader
               }
             >
-              <View>
+              <View
+                style={
+                  styles.modalHeaderText
+                }
+              >
                 <Text
-                  style={
-                    styles.modalTitle
-                  }
+                  style={[
+                    styles.modalTitle,
+
+                    isMobile &&
+                      styles.modalTitleMobile,
+                  ]}
                 >
                   Nova notificação
                 </Text>
@@ -1524,155 +1723,174 @@ export default function WebNotificacoesScreen() {
               </Pressable>
             </View>
 
-            <Text
+            <ScrollView
               style={
-                styles.label
+                styles.modalScroll
               }
-            >
-              Tipo
-            </Text>
-
-            <View
-              style={
-                styles.tipos
+              contentContainerStyle={
+                styles.modalScrollContent
               }
+              showsVerticalScrollIndicator={
+                false
+              }
+              keyboardShouldPersistTaps="handled"
             >
-              {(
-                [
-                  'sistema',
-                  'comunicado',
-                  'reserva',
-                  'ocorrencia',
-                  'mensagem',
-                ] as TipoNotificacao[]
-              ).map(
-                (
-                  item
-                ) => (
-                  <Pressable
-                    key={
-                      item
-                    }
-                    style={[
-                      styles.tipoButton,
+              <Text
+                style={
+                  styles.label
+                }
+              >
+                Tipo
+              </Text>
 
-                      tipo ===
-                        item &&
-                        styles.tipoButtonAtivo,
-                    ]}
-                    onPress={() =>
-                      setTipo(
+              <View
+                style={
+                  styles.tipos
+                }
+              >
+                {(
+                  [
+                    'sistema',
+                    'comunicado',
+                    'reserva',
+                    'ocorrencia',
+                    'mensagem',
+                  ] as TipoNotificacao[]
+                ).map(
+                  item => (
+                    <Pressable
+                      key={
                         item
-                      )
-                    }
-                    disabled={
-                      salvando
-                    }
-                  >
-                    <Text
+                      }
                       style={[
-                        styles.tipoButtonText,
+                        styles.tipoButton,
 
                         tipo ===
                           item &&
-                          styles.tipoButtonTextAtivo,
+                          styles.tipoButtonAtivo,
                       ]}
+                      onPress={() =>
+                        setTipo(
+                          item
+                        )
+                      }
+                      disabled={
+                        salvando
+                      }
                     >
-                      {tipoLabel(
-                        item
-                      )}
-                    </Text>
-                  </Pressable>
-                )
-              )}
-            </View>
+                      <Text
+                        style={[
+                          styles.tipoButtonText,
 
-            <Text
-              style={
-                styles.label
-              }
-            >
-              Título
-            </Text>
+                          tipo ===
+                            item &&
+                            styles.tipoButtonTextAtivo,
+                        ]}
+                      >
+                        {tipoLabel(
+                          item
+                        )}
+                      </Text>
+                    </Pressable>
+                  )
+                )}
+              </View>
 
-            <TextInput
-              value={titulo}
-              onChangeText={
-                setTitulo
-              }
-              placeholder="Ex.: Aviso importante"
-              placeholderTextColor={
-                colors.textLight
-              }
-              style={
-                styles.input
-              }
-              maxLength={
-                150
-              }
-              editable={
-                !salvando
-              }
-            />
-
-            <Text
-              style={
-                styles.label
-              }
-            >
-              Mensagem
-            </Text>
-
-            <TextInput
-              value={
-                mensagem
-              }
-              onChangeText={
-                setMensagem
-              }
-              placeholder="Digite a mensagem..."
-              placeholderTextColor={
-                colors.textLight
-              }
-              style={[
-                styles.input,
-                styles.textarea,
-              ]}
-              multiline
-              maxLength={
-                1500
-              }
-              textAlignVertical="top"
-              editable={
-                !salvando
-              }
-            />
-
-            {!!erro && (
-              <View
+              <Text
                 style={
-                  styles.erroBoxModal
+                  styles.label
                 }
               >
-                <Text
+                Título
+              </Text>
+
+              <TextInput
+                value={
+                  titulo
+                }
+                onChangeText={
+                  setTitulo
+                }
+                placeholder="Ex.: Aviso importante"
+                placeholderTextColor={
+                  colors.textLight
+                }
+                style={
+                  styles.input
+                }
+                maxLength={
+                  150
+                }
+                editable={
+                  !salvando
+                }
+              />
+
+              <Text
+                style={
+                  styles.label
+                }
+              >
+                Mensagem
+              </Text>
+
+              <TextInput
+                value={
+                  mensagem
+                }
+                onChangeText={
+                  setMensagem
+                }
+                placeholder="Digite a mensagem..."
+                placeholderTextColor={
+                  colors.textLight
+                }
+                style={[
+                  styles.input,
+                  styles.textarea,
+                ]}
+                multiline
+                maxLength={
+                  1500
+                }
+                textAlignVertical="top"
+                editable={
+                  !salvando
+                }
+              />
+
+              {!!erro && (
+                <View
                   style={
-                    styles.erroText
+                    styles.erroBoxModal
                   }
                 >
-                  {erro}
-                </Text>
-              </View>
-            )}
+                  <Text
+                    style={
+                      styles.erroText
+                    }
+                  >
+                    {erro}
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
 
             <View
-              style={
-                styles.modalButtons
-              }
+              style={[
+                styles.modalButtons,
+
+                isMobile &&
+                  styles.modalButtonsMobile,
+              ]}
             >
               <Pressable
-                style={
-                  styles.cancelButton
-                }
+                style={[
+                  styles.cancelButton,
+
+                  isMobile &&
+                    styles.modalActionMobile,
+                ]}
                 onPress={
                   fecharModal
                 }
@@ -1693,6 +1911,9 @@ export default function WebNotificacoesScreen() {
                 style={[
                   styles.sendButton,
 
+                  isMobile &&
+                    styles.modalActionMobile,
+
                   salvando &&
                     styles.buttonDisabled,
                 ]}
@@ -1711,9 +1932,7 @@ export default function WebNotificacoesScreen() {
                 ) : (
                   <>
                     <Send
-                      size={
-                        16
-                      }
+                      size={16}
                       color="#FFFFFF"
                     />
 
@@ -1731,30 +1950,35 @@ export default function WebNotificacoesScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </WebLayout>
   );
 }
 
-/* =====================================================
-   RESUMO
-===================================================== */
+// =====================================================
+// RESUMO
+// =====================================================
 
 function ResumoCard({
   titulo,
   valor,
   tipo,
+  responsive,
 }: {
   titulo: string;
   valor: number;
   tipo:
     | 'recebida'
     | 'enviada';
+  responsive?: boolean;
 }) {
   return (
     <View
-      style={
-        styles.resumoCard
-      }
+      style={[
+        styles.resumoCard,
+
+        responsive &&
+          styles.resumoCardResponsive,
+      ]}
     >
       <View
         style={
@@ -1800,26 +2024,12 @@ function ResumoCard({
   );
 }
 
-/* =====================================================
-   ESTILOS
-===================================================== */
+// =====================================================
+// ESTILOS
+// =====================================================
 
 const styles =
   StyleSheet.create({
-    container: {
-      flex: 1,
-      flexDirection:
-        'row',
-      backgroundColor:
-        colors.background,
-    },
-
-    content: {
-      flex: 1,
-      padding: 28,
-      minWidth: 0,
-    },
-
     header: {
       flexDirection:
         'row',
@@ -1828,6 +2038,19 @@ const styles =
       justifyContent:
         'space-between',
       marginBottom: 20,
+      width: '100%',
+    },
+
+    headerMobile: {
+      flexDirection:
+        'column',
+      alignItems:
+        'stretch',
+    },
+
+    headerTextMobile: {
+      width: '100%',
+      marginBottom: 16,
     },
 
     headerActions: {
@@ -1835,6 +2058,12 @@ const styles =
         'row',
       alignItems:
         'center',
+    },
+
+    headerActionsMobile: {
+      width: '100%',
+      alignItems:
+        'stretch',
     },
 
     title: {
@@ -1845,8 +2074,13 @@ const styles =
         colors.text,
     },
 
+    titleMobile: {
+      fontSize: 24,
+    },
+
     subtitle: {
       fontSize: 13,
+      lineHeight: 19,
       color:
         colors.textSecondary,
       marginTop: 5,
@@ -1902,12 +2136,19 @@ const styles =
       marginLeft: 7,
     },
 
+    actionButtonMobile: {
+      flex: 1,
+      minWidth: 0,
+      paddingHorizontal: 8,
+    },
+
     erroBox: {
       backgroundColor:
         colors.dangerLight,
       borderRadius: 9,
       padding: 10,
       marginBottom: 14,
+      width: '100%',
     },
 
     erroBoxModal: {
@@ -1930,6 +2171,12 @@ const styles =
       flexDirection:
         'row',
       marginBottom: 16,
+      width: '100%',
+    },
+
+    cardsResponsive: {
+      flexDirection:
+        'column',
     },
 
     resumoCard: {
@@ -1946,6 +2193,13 @@ const styles =
       alignItems:
         'center',
       marginRight: 12,
+    },
+
+    resumoCardResponsive: {
+      width: '100%',
+      minWidth: 0,
+      marginRight: 0,
+      marginBottom: 10,
     },
 
     resumoIcon: {
@@ -1980,6 +2234,12 @@ const styles =
       flexDirection:
         'row',
       marginBottom: 16,
+      width: '100%',
+    },
+
+    abasMobile: {
+      alignItems:
+        'stretch',
     },
 
     abaButton: {
@@ -1998,6 +2258,13 @@ const styles =
       justifyContent:
         'center',
       marginRight: 8,
+    },
+
+    abaButtonMobile: {
+      flex: 1,
+      minWidth: 0,
+      height: 54,
+      paddingHorizontal: 7,
     },
 
     abaButtonAtiva: {
@@ -2027,6 +2294,14 @@ const styles =
       alignItems:
         'center',
       marginBottom: 16,
+      width: '100%',
+    },
+
+    searchRowMobile: {
+      flexDirection:
+        'column',
+      alignItems:
+        'stretch',
     },
 
     searchBox: {
@@ -2046,6 +2321,10 @@ const styles =
       paddingHorizontal: 13,
     },
 
+    searchBoxMobile: {
+      maxWidth: '100%',
+    },
+
     searchInput: {
       flex: 1,
       height: 42,
@@ -2059,33 +2338,80 @@ const styles =
 
     resultadoText: {
       marginLeft: 12,
-      fontSize: 9,
-      fontWeight:
-        '700',
       color:
         colors.textSecondary,
+      fontSize: 10,
     },
 
-    scroll: {
-      flex: 1,
+    resultadoTextMobile: {
+      marginLeft: 0,
+      marginTop: 8,
     },
 
-    notificacaoCard: {
+    listaArea: {
+      width: '100%',
+    },
+
+    vazio: {
+      width: '100%',
+      minHeight: 260,
       backgroundColor:
         colors.surface,
-      borderRadius: 15,
       borderWidth: 1,
       borderColor:
         colors.border,
-      padding: 17,
+      borderRadius: 14,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      padding: 24,
+    },
+
+    vazioTitle: {
+      marginTop: 12,
+      fontSize: 15,
+      fontWeight:
+        '800',
+      color:
+        colors.text,
+      textAlign:
+        'center',
+    },
+
+    vazioSubtitulo: {
+      marginTop: 7,
+      fontSize: 11,
+      lineHeight: 17,
+      color:
+        colors.textSecondary,
+      textAlign:
+        'center',
+    },
+
+    notificacaoCard: {
+      width: '100%',
+      backgroundColor:
+        colors.surface,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
+      borderRadius: 14,
+      padding: 15,
       flexDirection:
         'row',
-      marginBottom: 11,
+      alignItems:
+        'flex-start',
+      marginBottom: 10,
+    },
+
+    notificacaoCardMobile: {
+      padding: 12,
     },
 
     notificacaoIcon: {
-      width: 43,
-      height: 43,
+      width: 44,
+      height: 44,
       borderRadius: 12,
       backgroundColor:
         colors.primaryLight,
@@ -2093,7 +2419,15 @@ const styles =
         'center',
       justifyContent:
         'center',
-      marginRight: 14,
+      marginRight: 13,
+      flexShrink: 0,
+    },
+
+    notificacaoIconMobile: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      marginRight: 9,
     },
 
     notificacaoInfo: {
@@ -2101,40 +2435,62 @@ const styles =
       minWidth: 0,
     },
 
-    cardTopo: {
-      flexDirection:
-        'row',
-      justifyContent:
-        'space-between',
-      alignItems:
-        'flex-start',
-    },
+    // NOVO - NOME DO MORADOR
 
-    tituloArea: {
-      flex: 1,
+    moradorArea: {
       flexDirection:
         'row',
       alignItems:
         'center',
-      flexWrap:
-        'wrap',
+      marginBottom: 6,
+    },
+
+    moradorNome: {
+      flex: 1,
+      minWidth: 0,
+      marginLeft: 5,
+      color:
+        colors.primary,
+      fontSize: 11,
+      lineHeight: 16,
+      fontWeight:
+        '800',
+    },
+
+    cardTopo: {
+      width: '100%',
+      flexDirection:
+        'row',
+      alignItems:
+        'flex-start',
+      justifyContent:
+        'space-between',
+    },
+
+    tituloArea: {
+      flex: 1,
+      minWidth: 0,
+      paddingRight: 8,
     },
 
     notificacaoTitulo: {
-      fontSize: 14,
-      fontWeight:
-        '800',
       color:
         colors.text,
-      marginRight: 8,
+      fontSize: 13,
+      lineHeight: 18,
+      fontWeight:
+        '800',
     },
 
     tipoBadge: {
+      alignSelf:
+        'flex-start',
       backgroundColor:
         colors.primaryLight,
+      borderRadius: 20,
       paddingHorizontal: 8,
       paddingVertical: 4,
-      borderRadius: 7,
+      marginTop: 6,
     },
 
     tipoText: {
@@ -2145,80 +2501,66 @@ const styles =
         '800',
     },
 
+    deleteButton: {
+      width: 34,
+      height: 34,
+      borderRadius: 8,
+      backgroundColor:
+        colors.dangerLight,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      flexShrink: 0,
+    },
+
     notificacaoMensagem: {
-      fontSize: 11,
-      lineHeight: 17,
       color:
         colors.textSecondary,
-      marginTop: 8,
+      fontSize: 11,
+      lineHeight: 17,
+      marginTop: 9,
     },
 
     cardFooter: {
+      width: '100%',
+      marginTop: 11,
+      paddingTop: 9,
+      borderTopWidth: 1,
+      borderTopColor:
+        colors.border,
       flexDirection:
         'row',
       alignItems:
         'center',
-      flexWrap:
-        'wrap',
-      marginTop: 8,
+      justifyContent:
+        'space-between',
+    },
+
+    cardFooterMobile: {
+      flexDirection:
+        'column',
+      alignItems:
+        'flex-start',
     },
 
     dataText: {
-      fontSize: 8,
       color:
         colors.textLight,
-      marginRight: 12,
+      fontSize: 9,
     },
 
     destinatariosText: {
-      fontSize: 8,
       color:
         colors.textSecondary,
-      fontWeight:
-        '700',
-    },
-
-    deleteButton: {
-      width: 34,
-      height: 34,
-      borderRadius: 9,
-      backgroundColor:
-        colors.background,
-      alignItems:
-        'center',
-      justifyContent:
-        'center',
-      marginLeft: 10,
-    },
-
-    vazio: {
-      minHeight: 300,
-      alignItems:
-        'center',
-      justifyContent:
-        'center',
-    },
-
-    vazioTitle: {
-      marginTop: 10,
-      fontSize: 14,
-      fontWeight:
-        '800',
-      color:
-        colors.text,
-    },
-
-    vazioSubtitulo: {
-      marginTop: 6,
-      fontSize: 10,
-      color:
-        colors.textSecondary,
+      fontSize: 9,
+      lineHeight: 14,
     },
 
     overlay: {
       flex: 1,
       backgroundColor:
-        'rgba(15, 23, 42, 0.45)',
+        'rgba(15,23,42,0.55)',
       alignItems:
         'center',
       justifyContent:
@@ -2226,45 +2568,75 @@ const styles =
       padding: 20,
     },
 
+    overlayMobile: {
+      padding: 9,
+    },
+
     modal: {
       width: '100%',
-      maxWidth: 600,
+      maxWidth: 620,
       maxHeight: '90%',
       backgroundColor:
         colors.surface,
-      borderRadius: 18,
-      padding: 22,
+      borderRadius: 16,
+      padding: 20,
+      overflow:
+        'hidden',
+    },
+
+    modalMobile: {
+      width: '100%',
+      maxWidth: '100%',
+      height: '94%',
+      maxHeight: '94%',
+      padding: 14,
     },
 
     modalHeader: {
+      width: '100%',
       flexDirection:
         'row',
-      justifyContent:
-        'space-between',
       alignItems:
         'flex-start',
-      marginBottom: 14,
+      justifyContent:
+        'space-between',
+      marginBottom: 8,
+      flexShrink: 0,
+    },
+
+    modalHeaderText: {
+      flex: 1,
+      minWidth: 0,
+      paddingRight: 10,
     },
 
     modalTitle: {
-      fontSize: 20,
+      fontSize: 21,
       fontWeight:
-        '800',
+        '900',
       color:
         colors.text,
     },
 
+    modalTitleMobile: {
+      fontSize: 18,
+    },
+
     modalSubtitle: {
-      fontSize: 10,
+      marginTop: 4,
       color:
         colors.textSecondary,
-      marginTop: 3,
+      fontSize: 10,
+      lineHeight: 15,
     },
 
     closeButton: {
       width: 36,
       height: 36,
       borderRadius: 9,
+      borderWidth: 1,
+      borderColor:
+        colors.border,
       backgroundColor:
         colors.background,
       alignItems:
@@ -2273,17 +2645,29 @@ const styles =
         'center',
     },
 
+    modalScroll: {
+      flex: 1,
+      minHeight: 0,
+      width: '100%',
+    },
+
+    modalScrollContent: {
+      flexGrow: 1,
+      paddingBottom: 12,
+    },
+
     label: {
-      fontSize: 11,
-      fontWeight:
-        '700',
+      marginTop: 13,
+      marginBottom: 7,
       color:
         colors.text,
-      marginBottom: 6,
-      marginTop: 11,
+      fontSize: 10,
+      fontWeight:
+        '800',
     },
 
     tipos: {
+      width: '100%',
       flexDirection:
         'row',
       flexWrap:
@@ -2291,16 +2675,20 @@ const styles =
     },
 
     tipoButton: {
-      borderRadius: 8,
+      minHeight: 35,
+      paddingHorizontal: 11,
       borderWidth: 1,
       borderColor:
         colors.border,
       backgroundColor:
         colors.background,
-      paddingHorizontal: 10,
-      paddingVertical: 7,
-      marginRight: 6,
-      marginBottom: 6,
+      borderRadius: 8,
+      alignItems:
+        'center',
+      justifyContent:
+        'center',
+      marginRight: 7,
+      marginBottom: 7,
     },
 
     tipoButtonAtivo: {
@@ -2311,11 +2699,11 @@ const styles =
     },
 
     tipoButtonText: {
+      color:
+        colors.textSecondary,
       fontSize: 9,
       fontWeight:
         '700',
-      color:
-        colors.textSecondary,
     },
 
     tipoButtonTextAtivo: {
@@ -2325,41 +2713,57 @@ const styles =
 
     input: {
       width: '100%',
-      minHeight: 45,
-      borderRadius: 10,
+      height: 44,
       borderWidth: 1,
       borderColor:
         colors.border,
+      borderRadius: 9,
       backgroundColor:
         colors.background,
-      paddingHorizontal: 13,
-      fontSize: 12,
+      paddingHorizontal: 12,
       color:
         colors.text,
+      fontSize: 11,
       outlineStyle:
         'none',
     } as any,
 
     textarea: {
-      minHeight: 120,
-      paddingTop: 12,
+      height: 120,
+      paddingTop: 11,
     },
 
     modalButtons: {
+      width: '100%',
       flexDirection:
         'row',
-      justifyContent:
-        'flex-end',
-      marginTop: 20,
+      alignItems:
+        'center',
+      borderTopWidth: 1,
+      borderTopColor:
+        colors.border,
+      paddingTop: 12,
+      marginTop: 6,
+      flexShrink: 0,
+    },
+
+    modalButtonsMobile: {
+      width: '100%',
+    },
+
+    modalActionMobile: {
+      minWidth: 0,
     },
 
     cancelButton: {
-      height: 42,
-      paddingHorizontal: 16,
-      borderRadius: 10,
+      flex: 1,
+      height: 44,
       borderWidth: 1,
       borderColor:
         colors.border,
+      borderRadius: 9,
+      backgroundColor:
+        colors.surface,
       alignItems:
         'center',
       justifyContent:
@@ -2370,36 +2774,35 @@ const styles =
     cancelText: {
       color:
         colors.textSecondary,
-      fontSize: 11,
+      fontSize: 10,
       fontWeight:
-        '700',
+        '800',
     },
 
     sendButton: {
-      minWidth: 100,
-      height: 42,
-      paddingHorizontal: 17,
-      borderRadius: 10,
+      flex: 1.3,
+      height: 44,
+      borderRadius: 9,
       backgroundColor:
         colors.primary,
-      flexDirection:
-        'row',
       alignItems:
         'center',
       justifyContent:
         'center',
-    },
-
-    buttonDisabled: {
-      opacity: 0.65,
+      flexDirection:
+        'row',
     },
 
     sendText: {
       color:
         '#FFFFFF',
-      fontSize: 11,
+      fontSize: 10,
       fontWeight:
         '800',
       marginLeft: 6,
+    },
+
+    buttonDisabled: {
+      opacity: 0.6,
     },
   });

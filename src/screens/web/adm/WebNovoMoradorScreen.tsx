@@ -2,18 +2,37 @@
 
 import {
   ActivityIndicator,
-  ScrollView,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import {
+  ArrowLeft,
+  Building2,
+  Check,
+  Eye,
+  EyeOff,
+  Home,
+  KeyRound,
+  Mail,
+  MapPin,
+  Save,
+  UserRound,
+} from 'lucide-react-native';
+
 import { AuthStackParamList } from '../../../navigation/AuthNavigator';
 import { supabase } from '../../../services/supabase';
+
+import WebLayout from '../../../components/WebLayout';
+import WebSidebar from '../../../components/WebSidebar';
+
+import { colors } from '../../../theme/theme';
 
 type Props = NativeStackScreenProps<
   AuthStackParamList,
@@ -28,12 +47,15 @@ type TipoResidencia =
 export default function WebNovoMoradorScreen({
   navigation,
 }: Props) {
+  const { width } = useWindowDimensions();
+
+  const isMobile = width < 768;
+  const isTablet = width >= 768 && width < 1100;
+
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
 
-  // NOVO: e-mail de contato
   const [email, setEmail] = useState('');
-
   const [telefone, setTelefone] = useState('');
 
   const [tipoResidencia, setTipoResidencia] =
@@ -115,10 +137,7 @@ export default function WebNovoMoradorScreen({
 
     const nomeLimpo = nome.trim();
 
-    const cpfNumeros = cpf.replace(
-      /\D/g,
-      ''
-    );
+    const cpfNumeros = cpf.replace(/\D/g, '');
 
     const emailLimpo = email
       .trim()
@@ -126,90 +145,60 @@ export default function WebNovoMoradorScreen({
 
     const telefoneLimpo = telefone.trim();
 
-    // ===============================
-    // VALIDAÇÕES
-    // ===============================
-
     if (!nomeLimpo) {
-      setErro(
-        'Informe o nome completo do morador.'
-      );
+      setErro('Informe o nome completo do morador.');
       return;
     }
 
     if (cpfNumeros.length !== 11) {
-      setErro(
-        'Informe um CPF com 11 números.'
-      );
+      setErro('Informe um CPF com 11 números.');
       return;
     }
 
     if (!emailLimpo) {
-      setErro(
-        'Informe o e-mail do morador.'
-      );
+      setErro('Informe o e-mail do morador.');
       return;
     }
 
     if (!validarEmail(emailLimpo)) {
-      setErro(
-        'Informe um e-mail válido.'
-      );
+      setErro('Informe um e-mail válido.');
       return;
     }
 
     if (
-      tipoResidencia ===
-        'apartamento_bloco' &&
-      (!apartamento.trim() ||
-        !bloco.trim())
+      tipoResidencia === 'apartamento_bloco' &&
+      (!apartamento.trim() || !bloco.trim())
     ) {
-      setErro(
-        'Informe o apartamento e o bloco.'
-      );
+      setErro('Informe o apartamento e o bloco.');
       return;
     }
 
     if (
       (tipoResidencia === 'casa' ||
-        tipoResidencia ===
-          'casa_quadra') &&
+        tipoResidencia === 'casa_quadra') &&
       !casa.trim()
     ) {
-      setErro(
-        'Informe a casa do morador.'
-      );
+      setErro('Informe a casa do morador.');
       return;
     }
 
     if (
-      tipoResidencia ===
-        'casa_quadra' &&
+      tipoResidencia === 'casa_quadra' &&
       !quadra.trim()
     ) {
-      setErro(
-        'Informe a quadra do morador.'
-      );
+      setErro('Informe a quadra do morador.');
       return;
     }
 
     if (senha.length < 6) {
-      setErro(
-        'A senha deve ter pelo menos 6 caracteres.'
-      );
+      setErro('A senha deve ter pelo menos 6 caracteres.');
       return;
     }
 
     if (senha !== confirmarSenha) {
-      setErro(
-        'A senha e a confirmação são diferentes.'
-      );
+      setErro('A senha e a confirmação são diferentes.');
       return;
     }
-
-    // ===============================
-    // CADASTRAR
-    // ===============================
 
     try {
       setCadastrando(true);
@@ -217,8 +206,7 @@ export default function WebNovoMoradorScreen({
       const {
         data: { session },
         error: sessionError,
-      } =
-        await supabase.auth.getSession();
+      } = await supabase.auth.getSession();
 
       if (sessionError) {
         throw new Error(
@@ -242,8 +230,6 @@ export default function WebNovoMoradorScreen({
 
               cpf: cpfNumeros,
 
-              // E-MAIL AGORA É ENVIADO
-              // DIRETAMENTE PARA A EDGE FUNCTION
               email: emailLimpo,
 
               telefone:
@@ -252,28 +238,23 @@ export default function WebNovoMoradorScreen({
               tipoResidencia,
 
               apartamento:
-                tipoResidencia ===
-                'apartamento_bloco'
+                tipoResidencia === 'apartamento_bloco'
                   ? apartamento.trim()
                   : null,
 
               bloco:
-                tipoResidencia ===
-                'apartamento_bloco'
+                tipoResidencia === 'apartamento_bloco'
                   ? bloco.trim()
                   : null,
 
               casa:
-                tipoResidencia ===
-                  'casa' ||
-                tipoResidencia ===
-                  'casa_quadra'
+                tipoResidencia === 'casa' ||
+                tipoResidencia === 'casa_quadra'
                   ? casa.trim()
                   : null,
 
               quadra:
-                tipoResidencia ===
-                'casa_quadra'
+                tipoResidencia === 'casa_quadra'
                   ? quadra.trim()
                   : null,
 
@@ -281,15 +262,10 @@ export default function WebNovoMoradorScreen({
             },
 
             headers: {
-              Authorization:
-                `Bearer ${session.access_token}`,
+              Authorization: `Bearer ${session.access_token}`,
             },
           }
         );
-
-      // ===============================
-      // ERRO DA EDGE FUNCTION
-      // ===============================
 
       if (error) {
         let mensagem =
@@ -304,27 +280,19 @@ export default function WebNovoMoradorScreen({
 
         if (contexto) {
           try {
-            const resposta =
-              await contexto
-                .clone()
-                .json();
+            const resposta = await contexto
+              .clone()
+              .json();
 
             if (resposta?.mensagem) {
-              mensagem =
-                resposta.mensagem;
-            } else if (
-              resposta?.message
-            ) {
-              mensagem =
-                resposta.message;
-            } else if (
-              resposta?.error
-            ) {
-              mensagem =
-                resposta.error;
+              mensagem = resposta.mensagem;
+            } else if (resposta?.message) {
+              mensagem = resposta.message;
+            } else if (resposta?.error) {
+              mensagem = resposta.error;
             }
           } catch {
-            // mantém a mensagem original
+            // Mantém a mensagem original.
           }
         }
 
@@ -340,19 +308,13 @@ export default function WebNovoMoradorScreen({
         return;
       }
 
-      // ===============================
-      // SUCESSO
-      // ===============================
-
       setSucesso(
         data?.mensagem ||
           'Morador cadastrado com sucesso.'
       );
 
       setTimeout(() => {
-        navigation.replace(
-          'WebMoradores'
-        );
+        navigation.replace('WebMoradores');
       }, 1000);
     } catch (error) {
       console.error(
@@ -370,872 +332,667 @@ export default function WebNovoMoradorScreen({
     }
   }
 
-  async function sair() {
-    await supabase.auth.signOut();
-
-    navigation.reset({
-      index: 0,
-      routes: [
-        {
-          name: 'WebLogin',
-        },
-      ],
-    });
-  }
-
   return (
-    <View style={styles.container}>
-      {/* SIDEBAR */}
+    <WebLayout
+      sidebar={
+        <WebSidebar active="moradores" />
+      }
+    >
+      <View
+        style={[
+          styles.header,
+          isMobile && styles.headerMobile,
+        ]}
+      >
+        <View style={styles.headerText}>
+          <Text
+            style={[
+              styles.pageTitle,
+              isMobile && styles.pageTitleMobile,
+            ]}
+          >
+            Novo morador
+          </Text>
 
-      <View style={styles.sidebar}>
-        <View>
-          <View style={styles.logoArea}>
-            <View style={styles.logo}>
-              <Text style={styles.logoLetter}>
-                C
-              </Text>
-            </View>
-
-            <View>
-              <Text style={styles.logoName}>
-                ConectaLar
-              </Text>
-
-              <Text
-                style={styles.logoSubtitle}
-              >
-                Administração
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.menu}>
-            <MenuItem
-              icon="⌂"
-              title="Dashboard"
-              onPress={() =>
-                navigation.navigate(
-                  'WebDashboard'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="♙"
-              title="Moradores"
-              active
-              onPress={() =>
-                navigation.navigate(
-                  'WebMoradores'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="▣"
-              title="Reservas"
-              onPress={() =>
-                navigation.navigate(
-                  'WebReservas'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="◁"
-              title="Comunicados"
-              onPress={() =>
-                navigation.navigate(
-                  'WebComunicados'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="△"
-              title="Ocorrências"
-              onPress={() =>
-                navigation.navigate(
-                  'WebOcorrencias'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="○"
-              title="Chat"
-              onPress={() =>
-                navigation.navigate(
-                  'WebChat'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="□"
-              title="Chat Geral"
-              onPress={() =>
-                navigation.navigate(
-                  'WebChatGeral'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="▤"
-              title="Regras"
-              onPress={() =>
-                navigation.navigate(
-                  'WebRegras'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="◷"
-              title="Horários"
-              onPress={() =>
-                navigation.navigate(
-                  'WebHorarios'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="♢"
-              title="Notificações"
-              onPress={() =>
-                navigation.navigate(
-                  'WebNotificacoes'
-                )
-              }
-            />
-
-            <MenuItem
-              icon="$"
-              title="Financeiro"
-              onPress={() =>
-                navigation.navigate(
-                  'WebFinanceiro'
-                )
-              }
-            />
-          </View>
+          <Text style={styles.pageSubtitle}>
+            Cadastre um novo morador no condomínio.
+          </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.logout}
-          onPress={sair}
+        <View
+          style={[
+            styles.headerBadge,
+            isMobile && styles.headerBadgeMobile,
+          ]}
         >
-          <Text style={styles.logoutIcon}>
-            ↪
-          </Text>
+          <View style={styles.headerBadgeIcon}>
+            <UserRound
+              size={18}
+              color={colors.primary}
+            />
+          </View>
 
-          <Text style={styles.logoutText}>
-            Sair da conta
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.headerBadgeTextArea}>
+            <Text style={styles.headerBadgeTitle}>
+              Cadastro
+            </Text>
 
-      {/* CONTEÚDO */}
-
-      <View style={styles.main}>
-        {/* HEADER */}
-
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.pageTitle}>
+            <Text style={styles.headerBadgeSubtitle}>
               Novo morador
             </Text>
-
-            <Text
-              style={styles.pageSubtitle}
-            >
-              Cadastre um novo morador no
-              condomínio
-            </Text>
-          </View>
-
-          <View style={styles.adminArea}>
-            <View style={styles.avatar}>
-              <Text
-                style={styles.avatarText}
-              >
-                A
-              </Text>
-            </View>
-
-            <View>
-              <Text
-                style={styles.adminName}
-              >
-                Administrador
-              </Text>
-
-              <Text
-                style={styles.adminRole}
-              >
-                Administrador
-              </Text>
-            </View>
           </View>
         </View>
+      </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={
-            styles.content
-          }
-        >
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() =>
-              navigation.navigate(
-                'WebMoradores'
-              )
-            }
+      <Pressable
+        style={({ pressed }) => [
+          styles.backButton,
+          pressed && styles.buttonPressed,
+        ]}
+        onPress={() =>
+          navigation.navigate('WebMoradores')
+        }
+      >
+        <ArrowLeft
+          size={16}
+          color={colors.primary}
+        />
+
+        <Text style={styles.backText}>
+          Voltar para moradores
+        </Text>
+      </Pressable>
+
+      <View style={styles.formContainer}>
+        <View style={styles.formHeader}>
+          <Text
+            style={[
+              styles.formTitle,
+              isMobile && styles.formTitleMobile,
+            ]}
           >
-            <Text style={styles.backText}>
-              ← Voltar para moradores
+            Cadastrar morador
+          </Text>
+
+          <Text style={styles.formDescription}>
+            Preencha os dados pessoais, a unidade residencial
+            e a senha inicial.
+          </Text>
+        </View>
+
+        {!!erro && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorTitle}>
+              Não foi possível continuar
             </Text>
-          </TouchableOpacity>
 
-          <View
-            style={styles.formContainer}
-          >
-            <View
-              style={styles.formHeader}
-            >
-              <Text
-                style={styles.formTitle}
-              >
-                Cadastrar morador
-              </Text>
+            <Text style={styles.errorText}>
+              {erro}
+            </Text>
+          </View>
+        )}
 
-              <Text
-                style={
-                  styles.formDescription
-                }
-              >
-                Preencha os dados pessoais,
-                a unidade residencial e a
-                senha inicial.
+        {!!sucesso && (
+          <View style={styles.successBox}>
+            <View style={styles.successHeader}>
+              <View style={styles.successIcon}>
+                <Check
+                  size={15}
+                  color="#166534"
+                />
+              </View>
+
+              <Text style={styles.successTitle}>
+                Cadastro concluído
               </Text>
             </View>
 
-            {/* ERRO */}
+            <Text style={styles.successText}>
+              {sucesso}
+            </Text>
+          </View>
+        )}
 
-            {erro ? (
-              <View
-                style={styles.errorBox}
-              >
-                <Text
-                  style={
-                    styles.errorTitle
-                  }
-                >
-                  Não foi possível
-                  continuar
-                </Text>
+        {/* DADOS PESSOAIS */}
 
-                <Text
-                  style={
-                    styles.errorText
-                  }
-                >
-                  {erro}
-                </Text>
-              </View>
-            ) : null}
+        <View
+          style={[
+            styles.card,
+            isMobile && styles.cardMobile,
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.cardIcon}>
+              <UserRound
+                size={18}
+                color={colors.primary}
+              />
+            </View>
 
-            {/* SUCESSO */}
-
-            {sucesso ? (
-              <View
-                style={styles.successBox}
-              >
-                <Text
-                  style={
-                    styles.successTitle
-                  }
-                >
-                  Cadastro concluído
-                </Text>
-
-                <Text
-                  style={
-                    styles.successText
-                  }
-                >
-                  {sucesso}
-                </Text>
-              </View>
-            ) : null}
-
-            {/* DADOS PESSOAIS */}
-
-            <View style={styles.card}>
-              <Text
-                style={styles.cardTitle}
-              >
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>
                 Dados pessoais
               </Text>
 
-              <Text
-                style={
-                  styles.cardDescription
-                }
-              >
-                Informações de identificação
-                e contato do morador.
+              <Text style={styles.cardDescription}>
+                Informações de identificação e contato do morador.
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.twoColumns,
+              (isMobile || isTablet) &&
+                styles.columnsResponsive,
+            ]}
+          >
+            <View
+              style={[
+                styles.fieldLarge,
+                (isMobile || isTablet) &&
+                  styles.fieldResponsive,
+              ]}
+            >
+              <Text style={styles.label}>
+                Nome completo
               </Text>
 
-              {/* NOME + CPF */}
+              <TextInput
+                value={nome}
+                onChangeText={setNome}
+                placeholder="Nome completo do morador"
+                placeholderTextColor={colors.textLight}
+                style={styles.input}
+              />
+            </View>
 
-              <View
-                style={styles.twoColumns}
-              >
-                <View
-                  style={styles.fieldLarge}
-                >
-                  <Text
-                    style={styles.label}
-                  >
-                    Nome completo
-                  </Text>
+            <View
+              style={[
+                styles.field,
+                (isMobile || isTablet) &&
+                  styles.fieldResponsive,
+              ]}
+            >
+              <Text style={styles.label}>
+                CPF
+              </Text>
 
-                  <TextInput
-                    value={nome}
-                    onChangeText={setNome}
-                    placeholder="Nome completo do morador"
-                    placeholderTextColor="#94A3B8"
-                    style={styles.input}
-                  />
-                </View>
+              <TextInput
+                value={cpf}
+                onChangeText={(valor) =>
+                  setCpf(formatarCPF(valor))
+                }
+                placeholder="000.000.000-00"
+                placeholderTextColor={colors.textLight}
+                keyboardType="numeric"
+                maxLength={14}
+                style={styles.input}
+              />
+            </View>
+          </View>
 
-                <View
-                  style={styles.field}
-                >
-                  <Text
-                    style={styles.label}
-                  >
-                    CPF
-                  </Text>
+          <View
+            style={[
+              styles.twoColumns,
+              (isMobile || isTablet) &&
+                styles.columnsResponsive,
+            ]}
+          >
+            <View
+              style={[
+                styles.field,
+                (isMobile || isTablet) &&
+                  styles.fieldResponsive,
+              ]}
+            >
+              <Text style={styles.label}>
+                E-mail
+              </Text>
 
-                  <TextInput
-                    value={cpf}
-                    onChangeText={(
-                      valor
-                    ) =>
-                      setCpf(
-                        formatarCPF(
-                          valor
-                        )
-                      )
-                    }
-                    placeholder="000.000.000-00"
-                    placeholderTextColor="#94A3B8"
-                    maxLength={14}
-                    style={styles.input}
-                  />
-                </View>
-              </View>
+              <View style={styles.inputWithIcon}>
+                <Mail
+                  size={16}
+                  color={colors.textLight}
+                />
 
-              {/* EMAIL + TELEFONE */}
-
-              <View
-                style={styles.twoColumns}
-              >
-                <View
-                  style={styles.field}
-                >
-                  <Text
-                    style={styles.label}
-                  >
-                    E-mail
-                  </Text>
-
-                  <TextInput
-                    value={email}
-                    onChangeText={setEmail}
-                    placeholder="morador@email.com"
-                    placeholderTextColor="#94A3B8"
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    style={styles.input}
-                  />
-                </View>
-
-                <View
-                  style={styles.field}
-                >
-                  <Text
-                    style={styles.label}
-                  >
-                    Telefone
-                  </Text>
-
-                  <TextInput
-                    value={telefone}
-                    onChangeText={(
-                      valor
-                    ) =>
-                      setTelefone(
-                        formatarTelefone(
-                          valor
-                        )
-                      )
-                    }
-                    placeholder="(00) 00000-0000"
-                    placeholderTextColor="#94A3B8"
-                    maxLength={15}
-                    style={styles.input}
-                  />
-                </View>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="morador@email.com"
+                  placeholderTextColor={colors.textLight}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  style={styles.inputInside}
+                />
               </View>
             </View>
 
-            {/* UNIDADE RESIDENCIAL */}
+            <View
+              style={[
+                styles.field,
+                (isMobile || isTablet) &&
+                  styles.fieldResponsive,
+              ]}
+            >
+              <Text style={styles.label}>
+                Telefone
+              </Text>
 
-            <View style={styles.card}>
-              <Text
-                style={styles.cardTitle}
-              >
+              <TextInput
+                value={telefone}
+                onChangeText={(valor) =>
+                  setTelefone(
+                    formatarTelefone(valor)
+                  )
+                }
+                placeholder="(00) 00000-0000"
+                placeholderTextColor={colors.textLight}
+                keyboardType="phone-pad"
+                maxLength={15}
+                style={styles.input}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* RESIDÊNCIA */}
+
+        <View
+          style={[
+            styles.card,
+            isMobile && styles.cardMobile,
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.cardIcon}>
+              <Home
+                size={18}
+                color={colors.primary}
+              />
+            </View>
+
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>
                 Unidade residencial
               </Text>
 
-              <Text
-                style={
-                  styles.cardDescription
-                }
-              >
-                Selecione o tipo de
-                residência.
+              <Text style={styles.cardDescription}>
+                Selecione o tipo de residência do morador.
               </Text>
+            </View>
+          </View>
 
-              <View
-                style={
-                  styles.residenceRow
-                }
-              >
-                <ResidenceButton
-                  title="Apartamento e Bloco"
-                  subtitle="Morador de apartamento"
-                  icon="A"
-                  selected={
+          <View
+            style={[
+              styles.residenceRow,
+              (isMobile || isTablet) &&
+                styles.residenceRowResponsive,
+            ]}
+          >
+            <ResidenceButton
+              title="Apartamento e Bloco"
+              subtitle="Morador de apartamento"
+              icon={
+                <Building2
+                  size={20}
+                  color={
                     tipoResidencia ===
                     'apartamento_bloco'
-                  }
-                  onPress={() =>
-                    selecionarTipo(
-                      'apartamento_bloco'
-                    )
+                      ? colors.primary
+                      : colors.textSecondary
                   }
                 />
+              }
+              selected={
+                tipoResidencia ===
+                'apartamento_bloco'
+              }
+              responsive={isMobile || isTablet}
+              onPress={() =>
+                selecionarTipo(
+                  'apartamento_bloco'
+                )
+              }
+            />
 
-                <ResidenceButton
-                  title="Casa"
-                  subtitle="Morador de casa"
-                  icon="C"
-                  selected={
-                    tipoResidencia ===
-                    'casa'
-                  }
-                  onPress={() =>
-                    selecionarTipo(
-                      'casa'
-                    )
+            <ResidenceButton
+              title="Casa"
+              subtitle="Morador de casa"
+              icon={
+                <Home
+                  size={20}
+                  color={
+                    tipoResidencia === 'casa'
+                      ? colors.primary
+                      : colors.textSecondary
                   }
                 />
+              }
+              selected={
+                tipoResidencia === 'casa'
+              }
+              responsive={isMobile || isTablet}
+              onPress={() =>
+                selecionarTipo('casa')
+              }
+            />
 
-                <ResidenceButton
-                  title="Casa e Quadra"
-                  subtitle="Casa identificada por quadra"
-                  icon="Q"
-                  selected={
+            <ResidenceButton
+              title="Casa e Quadra"
+              subtitle="Casa identificada por quadra"
+              icon={
+                <MapPin
+                  size={20}
+                  color={
                     tipoResidencia ===
                     'casa_quadra'
+                      ? colors.primary
+                      : colors.textSecondary
                   }
-                  onPress={() =>
-                    selecionarTipo(
-                      'casa_quadra'
-                    )
-                  }
+                />
+              }
+              selected={
+                tipoResidencia ===
+                'casa_quadra'
+              }
+              responsive={isMobile || isTablet}
+              onPress={() =>
+                selecionarTipo(
+                  'casa_quadra'
+                )
+              }
+            />
+          </View>
+
+          {tipoResidencia ===
+            'apartamento_bloco' && (
+            <View
+              style={[
+                styles.twoColumns,
+                (isMobile || isTablet) &&
+                  styles.columnsResponsive,
+              ]}
+            >
+              <View
+                style={[
+                  styles.field,
+                  (isMobile || isTablet) &&
+                    styles.fieldResponsive,
+                ]}
+              >
+                <Text style={styles.label}>
+                  Apartamento
+                </Text>
+
+                <TextInput
+                  value={apartamento}
+                  onChangeText={setApartamento}
+                  placeholder="Ex: 302"
+                  placeholderTextColor={colors.textLight}
+                  style={styles.input}
                 />
               </View>
 
-              {/* APARTAMENTO */}
+              <View
+                style={[
+                  styles.field,
+                  (isMobile || isTablet) &&
+                    styles.fieldResponsive,
+                ]}
+              >
+                <Text style={styles.label}>
+                  Bloco
+                </Text>
 
-              {tipoResidencia ===
-              'apartamento_bloco' ? (
-                <View
-                  style={
-                    styles.twoColumns
-                  }
-                >
-                  <View
-                    style={
-                      styles.field
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.label
-                      }
-                    >
-                      Apartamento
-                    </Text>
+                <TextInput
+                  value={bloco}
+                  onChangeText={setBloco}
+                  placeholder="Ex: B"
+                  placeholderTextColor={colors.textLight}
+                  style={styles.input}
+                />
+              </View>
+            </View>
+          )}
 
-                    <TextInput
-                      value={
-                        apartamento
-                      }
-                      onChangeText={
-                        setApartamento
-                      }
-                      placeholder="Ex: 302"
-                      placeholderTextColor="#94A3B8"
-                      style={
-                        styles.input
-                      }
-                    />
-                  </View>
+          {tipoResidencia === 'casa' && (
+            <View style={styles.fieldTop}>
+              <Text style={styles.label}>
+                Casa
+              </Text>
 
-                  <View
-                    style={
-                      styles.field
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.label
-                      }
-                    >
-                      Bloco
-                    </Text>
+              <TextInput
+                value={casa}
+                onChangeText={setCasa}
+                placeholder="Ex: 12"
+                placeholderTextColor={colors.textLight}
+                style={styles.input}
+              />
+            </View>
+          )}
 
-                    <TextInput
-                      value={bloco}
-                      onChangeText={
-                        setBloco
-                      }
-                      placeholder="Ex: B"
-                      placeholderTextColor="#94A3B8"
-                      style={
-                        styles.input
-                      }
-                    />
-                  </View>
-                </View>
-              ) : null}
+          {tipoResidencia ===
+            'casa_quadra' && (
+            <View
+              style={[
+                styles.twoColumns,
+                (isMobile || isTablet) &&
+                  styles.columnsResponsive,
+              ]}
+            >
+              <View
+                style={[
+                  styles.field,
+                  (isMobile || isTablet) &&
+                    styles.fieldResponsive,
+                ]}
+              >
+                <Text style={styles.label}>
+                  Casa
+                </Text>
 
-              {/* CASA */}
+                <TextInput
+                  value={casa}
+                  onChangeText={setCasa}
+                  placeholder="Ex: 12"
+                  placeholderTextColor={colors.textLight}
+                  style={styles.input}
+                />
+              </View>
 
-              {tipoResidencia ===
-              'casa' ? (
-                <View
-                  style={
-                    styles.fieldTop
-                  }
-                >
-                  <Text
-                    style={
-                      styles.label
-                    }
-                  >
-                    Casa
-                  </Text>
+              <View
+                style={[
+                  styles.field,
+                  (isMobile || isTablet) &&
+                    styles.fieldResponsive,
+                ]}
+              >
+                <Text style={styles.label}>
+                  Quadra
+                </Text>
 
-                  <TextInput
-                    value={casa}
-                    onChangeText={
-                      setCasa
-                    }
-                    placeholder="Ex: 12"
-                    placeholderTextColor="#94A3B8"
-                    style={styles.input}
-                  />
-                </View>
-              ) : null}
+                <TextInput
+                  value={quadra}
+                  onChangeText={setQuadra}
+                  placeholder="Ex: A"
+                  placeholderTextColor={colors.textLight}
+                  style={styles.input}
+                />
+              </View>
+            </View>
+          )}
+        </View>
 
-              {/* CASA + QUADRA */}
+        {/* ACESSO */}
 
-              {tipoResidencia ===
-              'casa_quadra' ? (
-                <View
-                  style={
-                    styles.twoColumns
-                  }
-                >
-                  <View
-                    style={
-                      styles.field
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.label
-                      }
-                    >
-                      Casa
-                    </Text>
-
-                    <TextInput
-                      value={casa}
-                      onChangeText={
-                        setCasa
-                      }
-                      placeholder="Ex: 12"
-                      placeholderTextColor="#94A3B8"
-                      style={
-                        styles.input
-                      }
-                    />
-                  </View>
-
-                  <View
-                    style={
-                      styles.field
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.label
-                      }
-                    >
-                      Quadra
-                    </Text>
-
-                    <TextInput
-                      value={quadra}
-                      onChangeText={
-                        setQuadra
-                      }
-                      placeholder="Ex: A"
-                      placeholderTextColor="#94A3B8"
-                      style={
-                        styles.input
-                      }
-                    />
-                  </View>
-                </View>
-              ) : null}
+        <View
+          style={[
+            styles.card,
+            isMobile && styles.cardMobile,
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.cardIcon}>
+              <KeyRound
+                size={18}
+                color={colors.primary}
+              />
             </View>
 
-            {/* ACESSO */}
-
-            <View style={styles.card}>
-              <Text
-                style={styles.cardTitle}
-              >
+            <View style={styles.cardHeaderText}>
+              <Text style={styles.cardTitle}>
                 Acesso do morador
               </Text>
 
-              <Text
-                style={
-                  styles.cardDescription
-                }
-              >
-                Defina a senha inicial do
-                morador. O acesso continua
-                sendo feito com CPF e senha.
+              <Text style={styles.cardDescription}>
+                Defina a senha inicial do morador. O acesso
+                continua sendo feito com CPF e senha.
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.twoColumns,
+              (isMobile || isTablet) &&
+                styles.columnsResponsive,
+            ]}
+          >
+            <View
+              style={[
+                styles.field,
+                (isMobile || isTablet) &&
+                  styles.fieldResponsive,
+              ]}
+            >
+              <Text style={styles.label}>
+                Senha inicial
               </Text>
 
-              <View
-                style={styles.twoColumns}
-              >
-                <View
-                  style={styles.field}
-                >
-                  <Text
-                    style={styles.label}
-                  >
-                    Senha inicial
-                  </Text>
+              <View style={styles.passwordBox}>
+                <TextInput
+                  value={senha}
+                  onChangeText={setSenha}
+                  placeholder="Mínimo de 6 caracteres"
+                  placeholderTextColor={colors.textLight}
+                  secureTextEntry={!mostrarSenha}
+                  style={styles.passwordInput}
+                />
 
-                  <View
-                    style={
-                      styles.passwordBox
-                    }
-                  >
-                    <TextInput
-                      value={senha}
-                      onChangeText={
-                        setSenha
-                      }
-                      placeholder="Mínimo de 6 caracteres"
-                      placeholderTextColor="#94A3B8"
-                      secureTextEntry={
-                        !mostrarSenha
-                      }
-                      style={
-                        styles.passwordInput
-                      }
+                <Pressable
+                  style={styles.eyeButton}
+                  onPress={() =>
+                    setMostrarSenha(
+                      (valor) => !valor
+                    )
+                  }
+                >
+                  {mostrarSenha ? (
+                    <EyeOff
+                      size={17}
+                      color={colors.primary}
                     />
-
-                    <TouchableOpacity
-                      onPress={() =>
-                        setMostrarSenha(
-                          (valor) =>
-                            !valor
-                        )
-                      }
-                    >
-                      <Text
-                        style={
-                          styles.eye
-                        }
-                      >
-                        {mostrarSenha
-                          ? 'Ocultar'
-                          : 'Ver'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View
-                  style={styles.field}
-                >
-                  <Text
-                    style={styles.label}
-                  >
-                    Confirmar senha
-                  </Text>
-
-                  <TextInput
-                    value={
-                      confirmarSenha
-                    }
-                    onChangeText={
-                      setConfirmarSenha
-                    }
-                    placeholder="Digite a senha novamente"
-                    placeholderTextColor="#94A3B8"
-                    secureTextEntry={
-                      !mostrarSenha
-                    }
-                    style={styles.input}
-                  />
-                </View>
+                  ) : (
+                    <Eye
+                      size={17}
+                      color={colors.primary}
+                    />
+                  )}
+                </Pressable>
               </View>
             </View>
 
-            {/* BOTÕES */}
-
             <View
-              style={styles.actions}
+              style={[
+                styles.field,
+                (isMobile || isTablet) &&
+                  styles.fieldResponsive,
+              ]}
             >
-              <TouchableOpacity
-                style={
-                  styles.cancelButton
-                }
-                disabled={cadastrando}
-                onPress={() =>
-                  navigation.navigate(
-                    'WebMoradores'
-                  )
-                }
-              >
-                <Text
-                  style={
-                    styles.cancelText
-                  }
-                >
-                  Cancelar
-                </Text>
-              </TouchableOpacity>
+              <Text style={styles.label}>
+                Confirmar senha
+              </Text>
 
-              <TouchableOpacity
-                style={[
-                  styles.saveButton,
-
-                  cadastrando &&
-                    styles.saveButtonDisabled,
-                ]}
-                disabled={cadastrando}
-                onPress={cadastrar}
-              >
-                {cadastrando ? (
-                  <ActivityIndicator
-                    size="small"
-                    color="#FFFFFF"
-                  />
-                ) : null}
-
-                <Text
-                  style={
-                    styles.saveText
-                  }
-                >
-                  {cadastrando
-                    ? 'Cadastrando...'
-                    : 'Cadastrar morador'}
-                </Text>
-              </TouchableOpacity>
+              <TextInput
+                value={confirmarSenha}
+                onChangeText={setConfirmarSenha}
+                placeholder="Digite a senha novamente"
+                placeholderTextColor={colors.textLight}
+                secureTextEntry={!mostrarSenha}
+                style={styles.input}
+              />
             </View>
           </View>
-        </ScrollView>
+        </View>
+
+        {/* AÇÕES */}
+
+        <View
+          style={[
+            styles.actions,
+            isMobile && styles.actionsMobile,
+          ]}
+        >
+          <Pressable
+            style={({ pressed }) => [
+              styles.cancelButton,
+              isMobile && styles.actionButtonMobile,
+              pressed && styles.buttonPressed,
+            ]}
+            disabled={cadastrando}
+            onPress={() =>
+              navigation.navigate('WebMoradores')
+            }
+          >
+            <Text style={styles.cancelText}>
+              Cancelar
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.saveButton,
+              isMobile && styles.actionButtonMobile,
+              cadastrando &&
+                styles.saveButtonDisabled,
+              pressed &&
+                !cadastrando &&
+                styles.buttonPressed,
+            ]}
+            disabled={cadastrando}
+            onPress={cadastrar}
+          >
+            {cadastrando ? (
+              <ActivityIndicator
+                size="small"
+                color="#FFFFFF"
+              />
+            ) : (
+              <Save
+                size={16}
+                color="#FFFFFF"
+              />
+            )}
+
+            <Text style={styles.saveText}>
+              {cadastrando
+                ? 'Cadastrando...'
+                : 'Cadastrar morador'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
-    </View>
+    </WebLayout>
   );
 }
-
-// =====================================
-// MENU
-// =====================================
-
-type MenuItemProps = {
-  icon: string;
-  title: string;
-  active?: boolean;
-  onPress?: () => void;
-};
-
-function MenuItem({
-  icon,
-  title,
-  active,
-  onPress,
-}: MenuItemProps) {
-  return (
-    <TouchableOpacity
-      style={[
-        styles.menuItem,
-        active &&
-          styles.menuItemActive,
-      ]}
-      onPress={onPress}
-    >
-      <Text
-        style={styles.menuIcon}
-      >
-        {icon}
-      </Text>
-
-      <Text
-        style={[
-          styles.menuText,
-
-          active &&
-            styles.menuTextActive,
-        ]}
-      >
-        {title}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-// =====================================
-// TIPO DE RESIDÊNCIA
-// =====================================
 
 type ResidenceButtonProps = {
   title: string;
   subtitle: string;
-  icon: string;
+  icon: React.ReactNode;
   selected: boolean;
+  responsive?: boolean;
   onPress: () => void;
 };
 
@@ -1244,15 +1001,22 @@ function ResidenceButton({
   subtitle,
   icon,
   selected,
+  responsive,
   onPress,
 }: ResidenceButtonProps) {
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      style={({ pressed }) => [
         styles.residenceButton,
+
+        responsive &&
+          styles.residenceButtonResponsive,
 
         selected &&
           styles.residenceButtonSelected,
+
+        pressed &&
+          styles.buttonPressed,
       ]}
       onPress={onPress}
     >
@@ -1264,23 +1028,10 @@ function ResidenceButton({
             styles.residenceIconBoxSelected,
         ]}
       >
-        <Text
-          style={[
-            styles.residenceIcon,
-
-            selected &&
-              styles.residenceIconSelected,
-          ]}
-        >
-          {icon}
-        </Text>
+        {icon}
       </View>
 
-      <View
-        style={
-          styles.residenceTextArea
-        }
-      >
+      <View style={styles.residenceTextArea}>
         <Text
           style={[
             styles.residenceTitle,
@@ -1292,11 +1043,7 @@ function ResidenceButton({
           {title}
         </Text>
 
-        <Text
-          style={
-            styles.residenceSubtitle
-          }
-        >
+        <Text style={styles.residenceSubtitle}>
           {subtitle}
         </Text>
       </View>
@@ -1309,388 +1056,400 @@ function ResidenceButton({
             styles.radioSelected,
         ]}
       >
-        {selected ? (
-          <View
-            style={
-              styles.radioInside
-            }
-          />
-        ) : null}
+        {selected && (
+          <View style={styles.radioInside} />
+        )}
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
-// =====================================
-// ESTILOS
-// =====================================
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
-  },
-
-  sidebar: {
-    width: 260,
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 18,
-    paddingVertical: 28,
-    justifyContent: 'space-between',
-  },
-
-  logoArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    marginBottom: 32,
-  },
-
-  logo: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#2563EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-
-  logoLetter: {
-    color: '#FFFFFF',
-    fontSize: 23,
-    fontWeight: '800',
-  },
-
-  logoName: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-
-  logoSubtitle: {
-    color: '#64748B',
-    fontSize: 11,
-    marginTop: 2,
-  },
-
-  menu: {
-    gap: 4,
-  },
-
-  menuItem: {
-    minHeight: 45,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    borderRadius: 10,
-  },
-
-  menuItemActive: {
-    backgroundColor: '#1E40AF',
-  },
-
-  menuIcon: {
-    width: 30,
-    color: '#94A3B8',
-    fontSize: 17,
-    textAlign: 'center',
-  },
-
-  menuText: {
-    color: '#94A3B8',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  menuTextActive: {
-    color: '#FFFFFF',
-  },
-
-  logout: {
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-  },
-
-  logoutIcon: {
-    color: '#94A3B8',
-    width: 30,
-    fontSize: 20,
-  },
-
-  logoutText: {
-    color: '#94A3B8',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  main: {
-    flex: 1,
-  },
-
   header: {
-    height: 88,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-    paddingHorizontal: 35,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-
-  pageTitle: {
-    color: '#0F172A',
-    fontSize: 23,
-    fontWeight: '800',
-  },
-
-  pageSubtitle: {
-    color: '#64748B',
-    fontSize: 12,
-    marginTop: 3,
-  },
-
-  adminArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#DBEAFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-
-  avatarText: {
-    color: '#2563EB',
-    fontWeight: '800',
-  },
-
-  adminName: {
-    color: '#0F172A',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-
-  adminRole: {
-    color: '#94A3B8',
-    fontSize: 10,
-    marginTop: 2,
-  },
-
-  scroll: {
-    flex: 1,
-  },
-
-  content: {
-    padding: 35,
-    paddingBottom: 60,
-  },
-
-  backButton: {
-    alignSelf: 'flex-start',
     marginBottom: 18,
   },
 
-  backText: {
-    color: '#2563EB',
+  headerMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+
+  headerText: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  pageTitle: {
+    color: colors.text,
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '800',
+  },
+
+  pageTitleMobile: {
+    fontSize: 23,
+    lineHeight: 29,
+  },
+
+  pageSubtitle: {
+    color: colors.textSecondary,
     fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+
+  headerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    marginLeft: 16,
+  },
+
+  headerBadgeMobile: {
+    marginLeft: 0,
+    marginTop: 13,
+    alignSelf: 'flex-start',
+  },
+
+  headerBadgeIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 9,
+  },
+
+  headerBadgeTextArea: {
+    minWidth: 0,
+  },
+
+  headerBadgeTitle: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  headerBadgeSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 9,
+    marginTop: 2,
+  },
+
+  backButton: {
+    minHeight: 38,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+    marginBottom: 16,
+  },
+
+  backText: {
+    color: colors.primary,
+    fontSize: 11,
     fontWeight: '700',
+    marginLeft: 6,
   },
 
   formContainer: {
     width: '100%',
-    maxWidth: 1050,
+    maxWidth: 1100,
     alignSelf: 'center',
   },
 
   formHeader: {
-    marginBottom: 20,
+    marginBottom: 18,
   },
 
   formTitle: {
-    color: '#0F172A',
-    fontSize: 22,
+    color: colors.text,
+    fontSize: 21,
+    lineHeight: 27,
     fontWeight: '800',
   },
 
+  formTitleMobile: {
+    fontSize: 19,
+  },
+
   formDescription: {
-    color: '#64748B',
-    fontSize: 12,
+    color: colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 17,
     marginTop: 5,
   },
 
   errorBox: {
-    backgroundColor: '#FEF2F2',
+    width: '100%',
+    backgroundColor: colors.dangerLight,
     borderWidth: 1,
     borderColor: '#FECACA',
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: 11,
+    padding: 14,
     marginBottom: 15,
   },
 
   errorTitle: {
-    color: '#991B1B',
-    fontSize: 12,
+    color: colors.danger,
+    fontSize: 11,
     fontWeight: '800',
   },
 
   errorText: {
-    color: '#B91C1C',
-    fontSize: 11,
+    color: colors.danger,
+    fontSize: 10,
+    lineHeight: 16,
     marginTop: 4,
   },
 
   successBox: {
+    width: '100%',
     backgroundColor: '#F0FDF4',
     borderWidth: 1,
     borderColor: '#BBF7D0',
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: 11,
+    padding: 14,
     marginBottom: 15,
+  },
+
+  successHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  successIcon: {
+    width: 25,
+    height: 25,
+    borderRadius: 8,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
   },
 
   successTitle: {
     color: '#166534',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
   },
 
   successText: {
     color: '#15803D',
-    fontSize: 11,
-    marginTop: 4,
+    fontSize: 10,
+    lineHeight: 16,
+    marginTop: 7,
   },
 
   card: {
-    backgroundColor: '#FFFFFF',
+    width: '100%',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 13,
+    borderColor: colors.border,
+    borderRadius: 14,
     padding: 22,
     marginBottom: 16,
   },
 
+  cardMobile: {
+    padding: 15,
+    borderRadius: 12,
+  },
+
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 5,
+  },
+
+  cardIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 11,
+    flexShrink: 0,
+  },
+
+  cardHeaderText: {
+    flex: 1,
+    minWidth: 0,
+  },
+
   cardTitle: {
-    color: '#0F172A',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '800',
   },
 
   cardDescription: {
-    color: '#64748B',
+    color: colors.textSecondary,
     fontSize: 10,
+    lineHeight: 16,
     marginTop: 3,
-    marginBottom: 18,
   },
 
   twoColumns: {
+    width: '100%',
     flexDirection: 'row',
-    gap: 15,
-    marginTop: 13,
+    alignItems: 'flex-start',
+    marginTop: 14,
+  },
+
+  columnsResponsive: {
+    flexDirection: 'column',
   },
 
   field: {
     flex: 1,
+    minWidth: 0,
+    marginRight: 14,
   },
 
   fieldLarge: {
     flex: 1.5,
+    minWidth: 0,
+    marginRight: 14,
+  },
+
+  fieldResponsive: {
+    width: '100%',
+    flex: 0,
+    marginRight: 0,
+    marginBottom: 13,
   },
 
   fieldTop: {
+    width: '100%',
     marginTop: 15,
   },
 
   label: {
-    color: '#334155',
+    color: colors.text,
     fontSize: 10,
     fontWeight: '700',
     marginBottom: 7,
   },
 
   input: {
+    width: '100%',
     height: 46,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
+    borderColor: colors.border,
+    borderRadius: 9,
     paddingHorizontal: 13,
-    color: '#0F172A',
+    color: colors.text,
     fontSize: 12,
+    outlineStyle: 'none',
+  } as any,
+
+  inputWithIcon: {
+    width: '100%',
+    height: 46,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 9,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
+  inputInside: {
+    flex: 1,
+    height: '100%',
+    minWidth: 0,
+    marginLeft: 8,
+    color: colors.text,
+    fontSize: 12,
+    outlineStyle: 'none',
+  } as any,
+
   residenceRow: {
+    width: '100%',
     flexDirection: 'row',
-    gap: 12,
+    marginTop: 15,
+  },
+
+  residenceRowResponsive: {
+    flexDirection: 'column',
   },
 
   residenceButton: {
     flex: 1,
-    minHeight: 78,
+    minWidth: 0,
+    minHeight: 82,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+    borderColor: colors.border,
+    borderRadius: 11,
+    backgroundColor: colors.background,
     padding: 13,
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: 11,
+  },
+
+  residenceButtonResponsive: {
+    width: '100%',
+    flex: 0,
+    marginRight: 0,
+    marginBottom: 10,
   },
 
   residenceButtonSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
   },
 
   residenceIconBox: {
-    width: 38,
-    height: 38,
+    width: 40,
+    height: 40,
     borderRadius: 10,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+    flexShrink: 0,
   },
 
   residenceIconBoxSelected: {
-    backgroundColor: '#DBEAFE',
-  },
-
-  residenceIcon: {
-    color: '#475569',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-
-  residenceIconSelected: {
-    color: '#2563EB',
+    borderColor: colors.primary,
   },
 
   residenceTextArea: {
     flex: 1,
+    minWidth: 0,
   },
 
   residenceTitle: {
-    color: '#334155',
+    color: colors.text,
     fontSize: 11,
     fontWeight: '700',
   },
 
   residenceTitleSelected: {
-    color: '#2563EB',
+    color: colors.primary,
   },
 
   residenceSubtitle: {
-    color: '#94A3B8',
+    color: colors.textSecondary,
     fontSize: 8,
+    lineHeight: 13,
     marginTop: 3,
   },
 
@@ -1699,88 +1458,117 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: '#CBD5E1',
-    justifyContent: 'center',
+    borderColor: colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+    flexShrink: 0,
   },
 
   radioSelected: {
-    borderColor: '#2563EB',
+    borderColor: colors.primary,
   },
 
   radioInside: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2563EB',
+    backgroundColor: colors.primary,
   },
 
   passwordBox: {
+    width: '100%',
     height: 46,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 8,
-    paddingHorizontal: 13,
+    borderColor: colors.border,
+    borderRadius: 9,
+    paddingLeft: 13,
+    paddingRight: 7,
   },
 
   passwordInput: {
     flex: 1,
+    minWidth: 0,
     height: '100%',
-    color: '#0F172A',
+    color: colors.text,
     fontSize: 12,
-  },
+    outlineStyle: 'none',
+  } as any,
 
-  eye: {
-    color: '#2563EB',
-    fontSize: 10,
-    fontWeight: '700',
+  eyeButton: {
+    width: 36,
+    height: 34,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   actions: {
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 10,
-    marginTop: 5,
+    alignItems: 'center',
+    marginTop: 2,
+    marginBottom: 15,
+  },
+
+  actionsMobile: {
+    flexDirection: 'column-reverse',
+    alignItems: 'stretch',
   },
 
   cancelButton: {
     height: 46,
+    minWidth: 120,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 9,
-    paddingHorizontal: 22,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 10,
   },
 
   cancelText: {
-    color: '#475569',
+    color: colors.textSecondary,
     fontSize: 11,
     fontWeight: '700',
   },
 
   saveButton: {
-    minWidth: 180,
+    minWidth: 190,
     height: 46,
-    backgroundColor: '#2563EB',
-    borderRadius: 9,
-    paddingHorizontal: 22,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingHorizontal: 20,
     flexDirection: 'row',
-    gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   saveButtonDisabled: {
-    opacity: 0.65,
+    opacity: 0.6,
   },
 
   saveText: {
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
+    marginLeft: 7,
+  },
+
+  actionButtonMobile: {
+    width: '100%',
+    minWidth: 0,
+    marginRight: 0,
+    marginBottom: 9,
+  },
+
+  buttonPressed: {
+    opacity: 0.78,
   },
 });

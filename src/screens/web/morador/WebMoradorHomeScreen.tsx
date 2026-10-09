@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import { useNavigation } from '@react-navigation/native';
@@ -49,6 +49,7 @@ type CardMenuProps = {
   descricao: string;
   icon: React.ReactNode;
   onPress: () => void;
+  isMobile: boolean;
 };
 
 function CardMenu({
@@ -56,11 +57,13 @@ function CardMenu({
   descricao,
   icon,
   onPress,
+  isMobile,
 }: CardMenuProps) {
   return (
     <Pressable
       style={({ pressed }) => [
         styles.menuCard,
+        isMobile && styles.menuCardMobile,
         pressed && styles.menuCardPressed,
       ]}
       onPress={onPress}
@@ -87,6 +90,10 @@ function CardMenu({
 }
 
 export default function WebMoradorHomeScreen() {
+  const { width } = useWindowDimensions();
+
+  const isMobile = width < 768;
+
   const navigation =
     useNavigation<NavigationProp>();
 
@@ -200,38 +207,52 @@ export default function WebMoradorHomeScreen() {
     >
       {/* CABEÇALHO */}
 
-      <View style={styles.header}>
-        <View style={styles.headerTextArea}>
-          <Text style={styles.welcome}>
+      <View
+        style={[
+          styles.header,
+          isMobile && styles.headerMobile,
+        ]}
+      >
+        <View
+          style={[
+            styles.headerTextArea,
+            isMobile && styles.headerTextAreaMobile,
+          ]}
+        >
+          <Text
+            style={[
+              styles.welcome,
+              isMobile && styles.welcomeMobile,
+            ]}
+          >
             Olá,{' '}
             {perfil?.nome?.split(' ')[0] ||
               'morador'}
             !
           </Text>
 
-          <Text
-            style={styles.headerDescription}
-          >
+          <Text style={styles.headerDescription}>
             Bem-vindo à sua área do condomínio.
           </Text>
         </View>
 
-        <View style={styles.residenceCard}>
+        <View
+          style={[
+            styles.residenceCard,
+            isMobile && styles.residenceCardMobile,
+          ]}
+        >
           <Home
             size={18}
             color={colors.primary}
           />
 
           <View style={styles.residenceInfo}>
-            <Text
-              style={styles.residenceLabel}
-            >
+            <Text style={styles.residenceLabel}>
               Sua residência
             </Text>
 
-            <Text
-              style={styles.residenceValue}
-            >
+            <Text style={styles.residenceValue}>
               {perfil?.casa
                 ? `Casa ${perfil.casa}`
                 : 'Residência'}
@@ -246,22 +267,42 @@ export default function WebMoradorHomeScreen() {
 
       {/* DESTAQUE */}
 
-      <View style={styles.hero}>
-        <View style={styles.heroTextArea}>
-          <Text style={styles.heroTitle}>
+      <View
+        style={[
+          styles.hero,
+          isMobile && styles.heroMobile,
+        ]}
+      >
+        <View
+          style={[
+            styles.heroTextArea,
+            isMobile && styles.heroTextAreaMobile,
+          ]}
+        >
+          <Text
+            style={[
+              styles.heroTitle,
+              isMobile && styles.heroTitleMobile,
+            ]}
+          >
             Tudo do condomínio em um só lugar
           </Text>
 
           <Text style={styles.heroText}>
-            Faça reservas, acompanhe
-            comunicados, registre ocorrências e
-            converse com a administração.
+            Faça reservas, acompanhe comunicados,
+            registre ocorrências e converse com a
+            administração.
           </Text>
         </View>
 
-        <View style={styles.heroIcon}>
+        <View
+          style={[
+            styles.heroIcon,
+            isMobile && styles.heroIconMobile,
+          ]}
+        >
           <Home
-            size={42}
+            size={isMobile ? 34 : 42}
             color="#FFFFFF"
           />
         </View>
@@ -273,7 +314,12 @@ export default function WebMoradorHomeScreen() {
         Acesso rápido
       </Text>
 
-      <View style={styles.grid}>
+      <View
+        style={[
+          styles.grid,
+          isMobile && styles.gridMobile,
+        ]}
+      >
         <CardMenu
           titulo="Reservas"
           descricao="Reserve churrasqueira e salão de festas."
@@ -288,6 +334,7 @@ export default function WebMoradorHomeScreen() {
               'WebMoradorReservas'
             )
           }
+          isMobile={isMobile}
         />
 
         <CardMenu
@@ -304,6 +351,7 @@ export default function WebMoradorHomeScreen() {
               'WebMoradorComunicados'
             )
           }
+          isMobile={isMobile}
         />
 
         <CardMenu
@@ -320,6 +368,7 @@ export default function WebMoradorHomeScreen() {
               'WebMoradorOcorrencias'
             )
           }
+          isMobile={isMobile}
         />
 
         <CardMenu
@@ -336,6 +385,7 @@ export default function WebMoradorHomeScreen() {
               'WebMoradorChat'
             )
           }
+          isMobile={isMobile}
         />
 
         <CardMenu
@@ -352,6 +402,7 @@ export default function WebMoradorHomeScreen() {
               'WebMoradorChatGeral'
             )
           }
+          isMobile={isMobile}
         />
 
         <CardMenu
@@ -368,6 +419,7 @@ export default function WebMoradorHomeScreen() {
               'WebMoradorRegras'
             )
           }
+          isMobile={isMobile}
         />
 
         <CardMenu
@@ -384,6 +436,7 @@ export default function WebMoradorHomeScreen() {
               'WebMoradorHorarios'
             )
           }
+          isMobile={isMobile}
         />
 
         <CardMenu
@@ -400,6 +453,7 @@ export default function WebMoradorHomeScreen() {
               'WebMoradorNotificacoes'
             )
           }
+          isMobile={isMobile}
         />
 
         <CardMenu
@@ -416,6 +470,7 @@ export default function WebMoradorHomeScreen() {
               'WebMoradorPerfil'
             )
           }
+          isMobile={isMobile}
         />
       </View>
     </WebLayout>
@@ -436,6 +491,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 
+  // =========================
+  // CABEÇALHO
+  // =========================
+
   header: {
     width: '100%',
     flexDirection: 'row',
@@ -444,15 +503,30 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
+  headerMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    marginBottom: 20,
+  },
+
   headerTextArea: {
     flex: 1,
     paddingRight: 20,
+  },
+
+  headerTextAreaMobile: {
+    paddingRight: 0,
+    marginBottom: 14,
   },
 
   welcome: {
     color: colors.text,
     fontSize: 26,
     fontWeight: '800',
+  },
+
+  welcomeMobile: {
+    fontSize: 24,
   },
 
   headerDescription: {
@@ -473,8 +547,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  residenceCardMobile: {
+    width: '100%',
+    minWidth: 0,
+  },
+
   residenceInfo: {
     marginLeft: 10,
+    flexShrink: 1,
   },
 
   residenceLabel: {
@@ -490,6 +570,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // =========================
+  // HERO
+  // =========================
+
   hero: {
     width: '100%',
     minHeight: 180,
@@ -502,15 +586,34 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
 
+  heroMobile: {
+    minHeight: 0,
+    padding: 22,
+    borderRadius: 18,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+
   heroTextArea: {
     flex: 1,
     maxWidth: 600,
+  },
+
+  heroTextAreaMobile: {
+    width: '100%',
+    maxWidth: '100%',
+    flex: 0,
   },
 
   heroTitle: {
     color: '#FFFFFF',
     fontSize: 22,
     fontWeight: '800',
+  },
+
+  heroTitleMobile: {
+    fontSize: 21,
+    lineHeight: 29,
   },
 
   heroText: {
@@ -532,6 +635,19 @@ const styles = StyleSheet.create({
     marginLeft: 25,
   },
 
+  heroIconMobile: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginLeft: 0,
+    marginTop: 20,
+    alignSelf: 'flex-end',
+  },
+
+  // =========================
+  // ACESSO RÁPIDO
+  // =========================
+
   sectionTitle: {
     color: colors.text,
     fontSize: 16,
@@ -544,6 +660,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+  },
+
+  gridMobile: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
   },
 
   menuCard: {
@@ -559,6 +680,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  menuCardMobile: {
+    width: '100%',
+    minHeight: 92,
+    padding: 15,
+  },
+
   menuCardPressed: {
     opacity: 0.7,
   },
@@ -571,10 +698,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 13,
+    flexShrink: 0,
   },
 
   menuTextArea: {
     flex: 1,
+    minWidth: 0,
   },
 
   menuTitle: {
@@ -594,5 +723,6 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     fontSize: 22,
     marginLeft: 8,
+    flexShrink: 0,
   },
 });

@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -32,6 +33,8 @@ import {
 import { colors } from '../../../theme/theme';
 import { typography } from '../../../theme/typography';
 import { supabase } from '../../../services/supabase';
+
+import WebLayout from '../../../components/WebLayout';
 import WebSidebar from '../../../components/WebSidebar';
 
 type Categoria =
@@ -92,6 +95,12 @@ const STATUS_OPCOES: {
 ];
 
 export default function WebOcorrenciasScreen() {
+  const { width } = useWindowDimensions();
+
+  const isMobile = width < 768;
+  const isTablet =
+    width >= 768 && width < 1100;
+
   const [ocorrencias, setOcorrencias] =
     useState<Ocorrencia[]>([]);
 
@@ -131,10 +140,6 @@ export default function WebOcorrenciasScreen() {
 
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
-
-  // =====================================================
-  // CARREGAR OCORRÊNCIAS
-  // =====================================================
 
   const carregarOcorrencias = useCallback(
     async (modoAtualizacao = false) => {
@@ -196,10 +201,6 @@ export default function WebOcorrenciasScreen() {
     carregarOcorrencias();
   }, [carregarOcorrencias]);
 
-  // =====================================================
-  // CONTADORES
-  // =====================================================
-
   const total = ocorrencias.length;
 
   const pendentes = ocorrencias.filter(
@@ -214,10 +215,6 @@ export default function WebOcorrenciasScreen() {
     (item) => item.status === 'resolvida'
   ).length;
 
-  // =====================================================
-  // FILTROS
-  // =====================================================
-
   const ocorrenciasFiltradas = useMemo(() => {
     if (filtro === 'todas') {
       return ocorrencias;
@@ -227,10 +224,6 @@ export default function WebOcorrenciasScreen() {
       (item) => item.status === filtro
     );
   }, [ocorrencias, filtro]);
-
-  // =====================================================
-  // ABRIR OCORRÊNCIA
-  // =====================================================
 
   function abrirOcorrencia(
     ocorrencia: Ocorrencia
@@ -262,10 +255,6 @@ export default function WebOcorrenciasScreen() {
     setRespostaAdmin('');
   }
 
-  // =====================================================
-  // SALVAR ALTERAÇÕES
-  // =====================================================
-
   async function salvarAlteracoes() {
     if (!ocorrenciaSelecionada) {
       return;
@@ -289,8 +278,10 @@ export default function WebOcorrenciasScreen() {
         .from('ocorrencias')
         .update({
           status: statusSelecionado,
+
           resposta_admin:
             respostaAdmin.trim() || null,
+
           atualizado_em: agora,
           resolvido_em: resolvidoEm,
         })
@@ -326,10 +317,6 @@ export default function WebOcorrenciasScreen() {
       setSalvando(false);
     }
   }
-
-  // =====================================================
-  // EXCLUIR
-  // =====================================================
 
   async function excluirOcorrencia() {
     if (!ocorrenciaSelecionada) {
@@ -391,10 +378,6 @@ export default function WebOcorrenciasScreen() {
     }
   }
 
-  // =====================================================
-  // FORMATAR DATA
-  // =====================================================
-
   function formatarData(
     valor: string | null
   ) {
@@ -416,10 +399,6 @@ export default function WebOcorrenciasScreen() {
       minute: '2-digit',
     });
   }
-
-  // =====================================================
-  // LABELS
-  // =====================================================
 
   function categoriaLabel(
     categoria: Categoria
@@ -523,482 +502,463 @@ export default function WebOcorrenciasScreen() {
     }
   }
 
-  // =====================================================
-  // TELA
-  // =====================================================
-
   return (
-    <View style={styles.container}>
-      <WebSidebar active="ocorrencias" />
-
-      <ScrollView
-        style={styles.main}
-        contentContainerStyle={
-          styles.mainContent
-        }
-        showsVerticalScrollIndicator={false}
+    <WebLayout
+      sidebar={
+        <WebSidebar active="ocorrencias" />
+      }
+    >
+      <View
+        style={[
+          styles.topHeader,
+          isMobile && styles.topHeaderMobile,
+        ]}
       >
-        {/* CABEÇALHO */}
-
-        <View style={styles.topHeader}>
-          <View style={styles.headerTextArea}>
-            <Text style={styles.pageTitle}>
-              Ocorrências
-            </Text>
-
-            <Text
-              style={styles.pageSubtitle}
-            >
-              Acompanhe solicitações dos moradores,
-              responda e atualize o andamento.
-            </Text>
-          </View>
-
-          <Pressable
-            style={styles.refreshButton}
-            onPress={() =>
-              carregarOcorrencias(true)
-            }
-            disabled={atualizando}
+        <View
+          style={[
+            styles.headerTextArea,
+            isMobile &&
+              styles.headerTextAreaMobile,
+          ]}
+        >
+          <Text
+            style={[
+              styles.pageTitle,
+              isMobile && styles.pageTitleMobile,
+            ]}
           >
-            {atualizando ? (
-              <ActivityIndicator
-                size="small"
-                color={colors.primary}
-              />
-            ) : (
-              <RefreshCw
-                size={17}
-                color={colors.primary}
-              />
-            )}
+            Ocorrências
+          </Text>
 
-            <Text
-              style={styles.refreshText}
-            >
-              Atualizar
-            </Text>
-          </Pressable>
+          <Text style={styles.pageSubtitle}>
+            Acompanhe solicitações dos moradores,
+            responda e atualize o andamento.
+          </Text>
         </View>
 
-        {/* ERRO */}
-
-        {erro ? (
-          <View style={styles.errorBox}>
-            <Text
-              style={styles.errorText}
-            >
-              {erro}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* SUCESSO */}
-
-        {sucesso ? (
-          <View style={styles.successBox}>
-            <Text
-              style={styles.successText}
-            >
-              {sucesso}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* RESUMO */}
-
-        <View style={styles.summaryRow}>
-          <SummaryCard
-            titulo="Total"
-            valor={total}
-            icon={
-              <Bell
-                size={21}
-                color={colors.primary}
-              />
-            }
-            iconBackground={
-              colors.primaryLight
-            }
-          />
-
-          <SummaryCard
-            titulo="Pendentes"
-            valor={pendentes}
-            icon={
-              <Clock3
-                size={21}
-                color="#92400E"
-              />
-            }
-            iconBackground="#FEF3C7"
-          />
-
-          <SummaryCard
-            titulo="Em andamento"
-            valor={emAndamento}
-            icon={
-              <MessageSquareText
-                size={21}
-                color="#1D4ED8"
-              />
-            }
-            iconBackground="#DBEAFE"
-          />
-
-          <SummaryCard
-            titulo="Resolvidas"
-            valor={resolvidas}
-            icon={
-              <CheckCircle2
-                size={21}
-                color="#166534"
-              />
-            }
-            iconBackground="#DCFCE7"
-          />
-        </View>
-
-        {/* LISTA */}
-
-        <View style={styles.contentCard}>
-          <View style={styles.listHeader}>
-            <View>
-              <Text
-                style={styles.sectionTitle}
-              >
-                Solicitações
-              </Text>
-
-              <Text
-                style={
-                  styles.sectionSubtitle
-                }
-              >
-                {ocorrenciasFiltradas.length}{' '}
-                ocorrência(s)
-              </Text>
-            </View>
-          </View>
-
-          {/* FILTROS */}
-
-          <View style={styles.filters}>
-            <FilterButton
-              label="Todas"
-              ativo={filtro === 'todas'}
-              onPress={() =>
-                setFiltro('todas')
-              }
+        <Pressable
+          style={({ pressed }) => [
+            styles.refreshButton,
+            isMobile &&
+              styles.refreshButtonMobile,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={() =>
+            carregarOcorrencias(true)
+          }
+          disabled={atualizando}
+        >
+          {atualizando ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.primary}
             />
-
-            <FilterButton
-              label="Pendentes"
-              ativo={
-                filtro === 'pendente'
-              }
-              onPress={() =>
-                setFiltro('pendente')
-              }
-            />
-
-            <FilterButton
-              label="Em andamento"
-              ativo={
-                filtro ===
-                'em_andamento'
-              }
-              onPress={() =>
-                setFiltro(
-                  'em_andamento'
-                )
-              }
-            />
-
-            <FilterButton
-              label="Resolvidas"
-              ativo={
-                filtro === 'resolvida'
-              }
-              onPress={() =>
-                setFiltro('resolvida')
-              }
-            />
-          </View>
-
-          {/* CARREGANDO */}
-
-          {carregando ? (
-            <View
-              style={
-                styles.loadingContainer
-              }
-            >
-              <ActivityIndicator
-                size="large"
-                color={colors.primary}
-              />
-
-              <Text
-                style={styles.loadingText}
-              >
-                Carregando ocorrências...
-              </Text>
-            </View>
-          ) : ocorrenciasFiltradas.length ===
-            0 ? (
-            <View style={styles.emptyCard}>
-              <View
-                style={styles.emptyIcon}
-              >
-                <Bell
-                  size={28}
-                  color={colors.primary}
-                />
-              </View>
-
-              <Text
-                style={styles.emptyTitle}
-              >
-                Nenhuma ocorrência
-              </Text>
-
-              <Text
-                style={
-                  styles.emptyDescription
-                }
-              >
-                Não existem ocorrências neste
-                filtro.
-              </Text>
-            </View>
           ) : (
-            <View
-              style={
-                styles.ocorrenciasGrid
-              }
+            <RefreshCw
+              size={17}
+              color={colors.primary}
+            />
+          )}
+
+          <Text style={styles.refreshText}>
+            Atualizar
+          </Text>
+        </Pressable>
+      </View>
+
+      {erro ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>
+            {erro}
+          </Text>
+        </View>
+      ) : null}
+
+      {sucesso ? (
+        <View style={styles.successBox}>
+          <Text style={styles.successText}>
+            {sucesso}
+          </Text>
+        </View>
+      ) : null}
+
+      <View
+        style={[
+          styles.summaryRow,
+          (isMobile || isTablet) &&
+            styles.summaryRowResponsive,
+        ]}
+      >
+        <SummaryCard
+          titulo="Total"
+          valor={total}
+          icon={
+            <Bell
+              size={21}
+              color={colors.primary}
+            />
+          }
+          iconBackground={colors.primaryLight}
+          responsive={isMobile || isTablet}
+        />
+
+        <SummaryCard
+          titulo="Pendentes"
+          valor={pendentes}
+          icon={
+            <Clock3
+              size={21}
+              color="#92400E"
+            />
+          }
+          iconBackground="#FEF3C7"
+          responsive={isMobile || isTablet}
+        />
+
+        <SummaryCard
+          titulo="Em andamento"
+          valor={emAndamento}
+          icon={
+            <MessageSquareText
+              size={21}
+              color="#1D4ED8"
+            />
+          }
+          iconBackground="#DBEAFE"
+          responsive={isMobile || isTablet}
+        />
+
+        <SummaryCard
+          titulo="Resolvidas"
+          valor={resolvidas}
+          icon={
+            <CheckCircle2
+              size={21}
+              color="#166534"
+            />
+          }
+          iconBackground="#DCFCE7"
+          responsive={isMobile || isTablet}
+        />
+      </View>
+
+      <View
+        style={[
+          styles.contentCard,
+          isMobile && styles.contentCardMobile,
+        ]}
+      >
+        <View style={styles.listHeader}>
+          <Text style={styles.sectionTitle}>
+            Solicitações
+          </Text>
+
+          <Text style={styles.sectionSubtitle}>
+            {ocorrenciasFiltradas.length}{' '}
+            ocorrência(s)
+          </Text>
+        </View>
+
+        <View style={styles.filters}>
+          <FilterButton
+            label="Todas"
+            ativo={filtro === 'todas'}
+            onPress={() =>
+              setFiltro('todas')
+            }
+          />
+
+          <FilterButton
+            label="Pendentes"
+            ativo={filtro === 'pendente'}
+            onPress={() =>
+              setFiltro('pendente')
+            }
+          />
+
+          <FilterButton
+            label="Em andamento"
+            ativo={
+              filtro === 'em_andamento'
+            }
+            onPress={() =>
+              setFiltro('em_andamento')
+            }
+          />
+
+          <FilterButton
+            label="Resolvidas"
+            ativo={filtro === 'resolvida'}
+            onPress={() =>
+              setFiltro('resolvida')
+            }
+          />
+        </View>
+
+        {carregando ? (
+          <View
+            style={styles.loadingContainer}
+          >
+            <ActivityIndicator
+              size="large"
+              color={colors.primary}
+            />
+
+            <Text style={styles.loadingText}>
+              Carregando ocorrências...
+            </Text>
+          </View>
+        ) : ocorrenciasFiltradas.length ===
+          0 ? (
+          <View style={styles.emptyCard}>
+            <View style={styles.emptyIcon}>
+              <Bell
+                size={28}
+                color={colors.primary}
+              />
+            </View>
+
+            <Text style={styles.emptyTitle}>
+              Nenhuma ocorrência
+            </Text>
+
+            <Text
+              style={styles.emptyDescription}
             >
-              {ocorrenciasFiltradas.map(
-                (ocorrencia) => {
-                  const estiloStatus =
-                    statusStyle(
-                      ocorrencia.status
-                    );
+              Não existem ocorrências neste
+              filtro.
+            </Text>
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.ocorrenciasGrid,
+              isMobile &&
+                styles.ocorrenciasGridMobile,
+            ]}
+          >
+            {ocorrenciasFiltradas.map(
+              (ocorrencia) => {
+                const estiloStatus =
+                  statusStyle(
+                    ocorrencia.status
+                  );
 
-                  const estiloPrioridade =
-                    prioridadeStyle(
-                      ocorrencia.prioridade
-                    );
+                const estiloPrioridade =
+                  prioridadeStyle(
+                    ocorrencia.prioridade
+                  );
 
-                  return (
-                    <Pressable
-                      key={ocorrencia.id}
+                return (
+                  <Pressable
+                    key={ocorrencia.id}
+                    style={({ pressed }) => [
+                      styles.ocorrenciaCard,
+
+                      (isMobile ||
+                        isTablet) &&
+                        styles.ocorrenciaCardResponsive,
+
+                      pressed &&
+                        styles.cardPressed,
+                    ]}
+                    onPress={() =>
+                      abrirOcorrencia(
+                        ocorrencia
+                      )
+                    }
+                  >
+                    <View
                       style={
-                        styles.ocorrenciaCard
-                      }
-                      onPress={() =>
-                        abrirOcorrencia(
-                          ocorrencia
-                        )
+                        styles.ocorrenciaTop
                       }
                     >
                       <View
                         style={
-                          styles.ocorrenciaTop
+                          styles.ocorrenciaIcon
                         }
                       >
-                        <View
-                          style={
-                            styles.ocorrenciaIcon
-                          }
-                        >
-                          <ShieldAlert
-                            size={21}
-                            color={
-                              colors.primary
-                            }
-                          />
-                        </View>
-
-                        <View
-                          style={
-                            styles.ocorrenciaTitleArea
-                          }
-                        >
-                          <Text
-                            style={
-                              styles.ocorrenciaTitle
-                            }
-                            numberOfLines={2}
-                          >
-                            {ocorrencia.titulo}
-                          </Text>
-
-                          <Text
-                            style={
-                              styles.ocorrenciaDate
-                            }
-                          >
-                            {formatarData(
-                              ocorrencia.criado_em
-                            )}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <Text
-                        style={
-                          styles.ocorrenciaDescription
-                        }
-                        numberOfLines={4}
-                      >
-                        {ocorrencia.descricao}
-                      </Text>
-
-                      {ocorrencia.local_ocorrencia ? (
-                        <View
-                          style={
-                            styles.locationRow
-                          }
-                        >
-                          <MapPin
-                            size={14}
-                            color={
-                              colors.textSecondary
-                            }
-                          />
-
-                          <Text
-                            style={
-                              styles.locationText
-                            }
-                            numberOfLines={1}
-                          >
-                            {
-                              ocorrencia.local_ocorrencia
-                            }
-                          </Text>
-                        </View>
-                      ) : null}
-
-                      <View
-                        style={styles.tagsRow}
-                      >
-                        <View
-                          style={
-                            styles.categoryTag
-                          }
-                        >
-                          <Text
-                            style={
-                              styles.categoryTagText
-                            }
-                          >
-                            {categoriaLabel(
-                              ocorrencia.categoria
-                            )}
-                          </Text>
-                        </View>
-
-                        <View
-                          style={[
-                            styles.tag,
-                            {
-                              backgroundColor:
-                                estiloPrioridade.backgroundColor,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.tagText,
-                              {
-                                color:
-                                  estiloPrioridade.color,
-                              },
-                            ]}
-                          >
-                            {prioridadeLabel(
-                              ocorrencia.prioridade
-                            )}
-                          </Text>
-                        </View>
-
-                        <View
-                          style={[
-                            styles.tag,
-                            {
-                              backgroundColor:
-                                estiloStatus.backgroundColor,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.tagText,
-                              {
-                                color:
-                                  estiloStatus.color,
-                              },
-                            ]}
-                          >
-                            {statusLabel(
-                              ocorrencia.status
-                            )}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View
-                        style={
-                          styles.cardFooter
-                        }
-                      >
-                        <Text
-                          style={
-                            styles.openText
-                          }
-                        >
-                          Ver detalhes
-                        </Text>
-
-                        <MessageSquareText
-                          size={16}
+                        <ShieldAlert
+                          size={21}
                           color={
                             colors.primary
                           }
                         />
                       </View>
-                    </Pressable>
-                  );
-                }
-              )}
-            </View>
-          )}
-        </View>
-      </ScrollView>
 
-      {/* ================================================= */}
-      {/* MODAL */}
-      {/* ================================================= */}
+                      <View
+                        style={
+                          styles.ocorrenciaTitleArea
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.ocorrenciaTitle
+                          }
+                          numberOfLines={2}
+                        >
+                          {ocorrencia.titulo}
+                        </Text>
+
+                        <Text
+                          style={
+                            styles.ocorrenciaDate
+                          }
+                        >
+                          {formatarData(
+                            ocorrencia.criado_em
+                          )}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text
+                      style={
+                        styles.ocorrenciaDescription
+                      }
+                      numberOfLines={4}
+                    >
+                      {ocorrencia.descricao}
+                    </Text>
+
+                    {ocorrencia.local_ocorrencia ? (
+                      <View
+                        style={
+                          styles.locationRow
+                        }
+                      >
+                        <MapPin
+                          size={14}
+                          color={
+                            colors.textSecondary
+                          }
+                        />
+
+                        <Text
+                          style={
+                            styles.locationText
+                          }
+                          numberOfLines={1}
+                        >
+                          {
+                            ocorrencia.local_ocorrencia
+                          }
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    <View style={styles.tagsRow}>
+                      <View
+                        style={
+                          styles.categoryTag
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.categoryTagText
+                          }
+                        >
+                          {categoriaLabel(
+                            ocorrencia.categoria
+                          )}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.tag,
+                          {
+                            backgroundColor:
+                              estiloPrioridade.backgroundColor,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.tagText,
+                            {
+                              color:
+                                estiloPrioridade.color,
+                            },
+                          ]}
+                        >
+                          {prioridadeLabel(
+                            ocorrencia.prioridade
+                          )}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.tag,
+                          {
+                            backgroundColor:
+                              estiloStatus.backgroundColor,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.tagText,
+                            {
+                              color:
+                                estiloStatus.color,
+                            },
+                          ]}
+                        >
+                          {statusLabel(
+                            ocorrencia.status
+                          )}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View
+                      style={styles.cardFooter}
+                    >
+                      <Text
+                        style={styles.openText}
+                      >
+                        Ver detalhes
+                      </Text>
+
+                      <MessageSquareText
+                        size={16}
+                        color={colors.primary}
+                      />
+                    </View>
+                  </Pressable>
+                );
+              }
+            )}
+          </View>
+        )}
+      </View>
 
       <Modal
         visible={modalVisivel}
         transparent
         animationType="fade"
         onRequestClose={fecharModal}
+        statusBarTranslucent
       >
         <View
-          style={styles.modalOverlay}
+          style={[
+            styles.modalOverlay,
+            isMobile &&
+              styles.modalOverlayMobile,
+          ]}
         >
-          <View style={styles.modalCard}>
-            <View
-              style={styles.modalHeader}
-            >
+          <View
+            style={[
+              styles.modalCard,
+              isMobile &&
+                styles.modalCardMobile,
+            ]}
+          >
+            <View style={styles.modalHeader}>
               <View
-                style={
-                  styles.modalTitleArea
-                }
+                style={styles.modalTitleArea}
               >
                 <Text
                   style={styles.modalLabel}
@@ -1007,7 +967,11 @@ export default function WebOcorrenciasScreen() {
                 </Text>
 
                 <Text
-                  style={styles.modalTitle}
+                  style={[
+                    styles.modalTitle,
+                    isMobile &&
+                      styles.modalTitleMobile,
+                  ]}
                   numberOfLines={2}
                 >
                   {
@@ -1017,9 +981,11 @@ export default function WebOcorrenciasScreen() {
               </View>
 
               <Pressable
-                style={
-                  styles.closeButton
-                }
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed &&
+                    styles.buttonPressed,
+                ]}
                 onPress={fecharModal}
               >
                 <X
@@ -1031,9 +997,13 @@ export default function WebOcorrenciasScreen() {
 
             <ScrollView
               style={styles.modalScroll}
+              contentContainerStyle={
+                styles.modalScrollContent
+              }
               showsVerticalScrollIndicator={
                 false
               }
+              keyboardShouldPersistTaps="handled"
             >
               {ocorrenciaSelecionada ? (
                 <>
@@ -1048,13 +1018,18 @@ export default function WebOcorrenciasScreen() {
                   </Text>
 
                   <View
-                    style={styles.infoGrid}
+                    style={[
+                      styles.infoGrid,
+                      isMobile &&
+                        styles.infoGridMobile,
+                    ]}
                   >
                     <InfoItem
                       label="Categoria"
                       value={categoriaLabel(
                         ocorrenciaSelecionada.categoria
                       )}
+                      mobile={isMobile}
                     />
 
                     <InfoItem
@@ -1062,6 +1037,7 @@ export default function WebOcorrenciasScreen() {
                       value={prioridadeLabel(
                         ocorrenciaSelecionada.prioridade
                       )}
+                      mobile={isMobile}
                     />
 
                     <InfoItem
@@ -1070,6 +1046,7 @@ export default function WebOcorrenciasScreen() {
                         ocorrenciaSelecionada.local_ocorrencia ||
                         'Não informado'
                       }
+                      mobile={isMobile}
                     />
 
                     <InfoItem
@@ -1077,6 +1054,7 @@ export default function WebOcorrenciasScreen() {
                       value={formatarData(
                         ocorrenciaSelecionada.criado_em
                       )}
+                      mobile={isMobile}
                     />
                   </View>
 
@@ -1087,9 +1065,7 @@ export default function WebOcorrenciasScreen() {
                   </Text>
 
                   <Pressable
-                    style={
-                      styles.selectButton
-                    }
+                    style={styles.selectButton}
                     onPress={() =>
                       setStatusAberto(
                         !statusAberto
@@ -1124,11 +1100,15 @@ export default function WebOcorrenciasScreen() {
                         (opcao) => (
                           <Pressable
                             key={opcao.valor}
-                            style={[
+                            style={({ pressed }) => [
                               styles.selectOption,
+
                               statusSelecionado ===
                                 opcao.valor &&
                                 styles.selectOptionActive,
+
+                              pressed &&
+                                styles.optionPressed,
                             ]}
                             onPress={() => {
                               setStatusSelecionado(
@@ -1143,6 +1123,7 @@ export default function WebOcorrenciasScreen() {
                             <Text
                               style={[
                                 styles.selectOptionText,
+
                                 statusSelecionado ===
                                   opcao.valor &&
                                   styles.selectOptionTextActive,
@@ -1189,15 +1170,26 @@ export default function WebOcorrenciasScreen() {
             </ScrollView>
 
             <View
-              style={styles.modalActions}
+              style={[
+                styles.modalActions,
+                isMobile &&
+                  styles.modalActionsMobile,
+              ]}
             >
               <Pressable
-                style={
-                  styles.deleteButton
-                }
-                onPress={
-                  excluirOcorrencia
-                }
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  isMobile &&
+                    styles.modalButtonMobile,
+
+                  (salvando ||
+                    excluindo) &&
+                    styles.buttonDisabled,
+
+                  pressed &&
+                    styles.buttonPressed,
+                ]}
+                onPress={excluirOcorrencia}
                 disabled={
                   salvando || excluindo
                 }
@@ -1226,15 +1218,19 @@ export default function WebOcorrenciasScreen() {
               </Pressable>
 
               <Pressable
-                style={[
+                style={({ pressed }) => [
                   styles.saveButton,
+                  isMobile &&
+                    styles.modalButtonMobile,
+
                   (salvando ||
                     excluindo) &&
                     styles.buttonDisabled,
+
+                  pressed &&
+                    styles.buttonPressed,
                 ]}
-                onPress={
-                  salvarAlteracoes
-                }
+                onPress={salvarAlteracoes}
                 disabled={
                   salvando || excluindo
                 }
@@ -1265,13 +1261,9 @@ export default function WebOcorrenciasScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </WebLayout>
   );
 }
-
-// =====================================================
-// BOTÃO DE FILTRO
-// =====================================================
 
 type FilterButtonProps = {
   label: string;
@@ -1286,16 +1278,21 @@ function FilterButton({
 }: FilterButtonProps) {
   return (
     <Pressable
-      style={[
+      style={({ pressed }) => [
         styles.filterButton,
+
         ativo &&
           styles.filterButtonActive,
+
+        pressed &&
+          styles.buttonPressed,
       ]}
       onPress={onPress}
     >
       <Text
         style={[
           styles.filterButtonText,
+
           ativo &&
             styles.filterButtonTextActive,
         ]}
@@ -1306,21 +1303,24 @@ function FilterButton({
   );
 }
 
-// =====================================================
-// ITEM DE INFORMAÇÃO
-// =====================================================
-
 type InfoItemProps = {
   label: string;
   value: string;
+  mobile?: boolean;
 };
 
 function InfoItem({
   label,
   value,
+  mobile,
 }: InfoItemProps) {
   return (
-    <View style={styles.infoItem}>
+    <View
+      style={[
+        styles.infoItem,
+        mobile && styles.infoItemMobile,
+      ]}
+    >
       <Text style={styles.infoLabel}>
         {label}
       </Text>
@@ -1332,15 +1332,12 @@ function InfoItem({
   );
 }
 
-// =====================================================
-// CARD DO RESUMO
-// =====================================================
-
 type SummaryCardProps = {
   titulo: string;
   valor: number;
   icon: React.ReactNode;
   iconBackground: string;
+  responsive?: boolean;
 };
 
 function SummaryCard({
@@ -1348,9 +1345,16 @@ function SummaryCard({
   valor,
   icon,
   iconBackground,
+  responsive,
 }: SummaryCardProps) {
   return (
-    <View style={styles.summaryCard}>
+    <View
+      style={[
+        styles.summaryCard,
+        responsive &&
+          styles.summaryCardResponsive,
+      ]}
+    >
       <View
         style={[
           styles.summaryIcon,
@@ -1363,16 +1367,12 @@ function SummaryCard({
         {icon}
       </View>
 
-      <View>
-        <Text
-          style={styles.summaryNumber}
-        >
+      <View style={styles.summaryTextArea}>
+        <Text style={styles.summaryNumber}>
           {valor}
         </Text>
 
-        <Text
-          style={styles.summaryLabel}
-        >
+        <Text style={styles.summaryLabel}>
           {titulo}
         </Text>
       </View>
@@ -1380,47 +1380,41 @@ function SummaryCard({
   );
 }
 
-// =====================================================
-// ESTILOS
-// =====================================================
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor:
-      colors.background,
-  },
-
-  main: {
-    flex: 1,
-  },
-
-  mainContent: {
-    padding: 30,
-    paddingBottom: 50,
-  },
-
   topHeader: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent:
-      'space-between',
+    justifyContent: 'space-between',
     marginBottom: 24,
+  },
+
+  topHeaderMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
   },
 
   headerTextArea: {
     flex: 1,
+    minWidth: 0,
     paddingRight: 20,
   },
 
-  // Usa o padrão global de título
+  headerTextAreaMobile: {
+    paddingRight: 0,
+    marginBottom: 14,
+  },
+
   pageTitle: {
     ...typography.pageTitle,
     color: colors.text,
   },
 
-  // Usa o padrão global de subtítulo
+  pageTitleMobile: {
+    fontSize: 23,
+    lineHeight: 29,
+  },
+
   pageSubtitle: {
     ...typography.pageSubtitle,
     color: colors.textSecondary,
@@ -1433,10 +1427,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 11,
-    backgroundColor:
-      colors.surface,
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+
+  refreshButtonMobile: {
+    width: '100%',
   },
 
   refreshText: {
@@ -1472,15 +1471,20 @@ const styles = StyleSheet.create({
   },
 
   summaryRow: {
+    width: '100%',
     flexDirection: 'row',
     marginBottom: 22,
   },
 
+  summaryRowResponsive: {
+    flexDirection: 'column',
+  },
+
   summaryCard: {
     flex: 1,
+    minWidth: 0,
     minHeight: 105,
-    backgroundColor:
-      colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 15,
@@ -1490,6 +1494,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  summaryCardResponsive: {
+    width: '100%',
+    flex: 0,
+    marginRight: 0,
+    marginBottom: 10,
+  },
+
   summaryIcon: {
     width: 45,
     height: 45,
@@ -1497,6 +1508,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 13,
+    flexShrink: 0,
+  },
+
+  summaryTextArea: {
+    flex: 1,
+    minWidth: 0,
   },
 
   summaryNumber: {
@@ -1511,12 +1528,17 @@ const styles = StyleSheet.create({
   },
 
   contentCard: {
-    backgroundColor:
-      colors.surface,
+    width: '100%',
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 17,
     padding: 20,
+  },
+
+  contentCardMobile: {
+    padding: 14,
+    borderRadius: 13,
   },
 
   listHeader: {
@@ -1535,6 +1557,7 @@ const styles = StyleSheet.create({
   },
 
   filters: {
+    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 17,
@@ -1544,21 +1567,18 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: 15,
     borderRadius: 10,
-    backgroundColor:
-      colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
-    marginBottom: 6,
+    marginBottom: 8,
   },
 
   filterButtonActive: {
-    backgroundColor:
-      colors.primary,
-    borderColor:
-      colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   filterButtonText: {
@@ -1586,14 +1606,14 @@ const styles = StyleSheet.create({
     minHeight: 250,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 15,
   },
 
   emptyIcon: {
     width: 58,
     height: 58,
     borderRadius: 17,
-    backgroundColor:
-      colors.primaryLight,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1608,24 +1628,37 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.textSecondary,
     marginTop: 5,
+    textAlign: 'center',
   },
 
   ocorrenciasGrid: {
+    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginHorizontal: -6,
   },
 
+  ocorrenciasGridMobile: {
+    flexDirection: 'column',
+    marginHorizontal: 0,
+  },
+
   ocorrenciaCard: {
     width: '48%',
-    minWidth: 340,
-    backgroundColor:
-      colors.surface,
+    minWidth: 320,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 15,
     padding: 16,
     margin: 6,
+  },
+
+  ocorrenciaCardResponsive: {
+    width: '100%',
+    minWidth: 0,
+    marginHorizontal: 0,
+    marginVertical: 6,
   },
 
   ocorrenciaTop: {
@@ -1637,14 +1670,15 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor:
-      colors.primaryLight,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
 
   ocorrenciaTitleArea: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 11,
   },
 
@@ -1675,6 +1709,7 @@ const styles = StyleSheet.create({
   locationText: {
     ...typography.caption,
     flex: 1,
+    minWidth: 0,
     color: colors.textSecondary,
     marginLeft: 5,
   },
@@ -1686,8 +1721,7 @@ const styles = StyleSheet.create({
   },
 
   categoryTag: {
-    backgroundColor:
-      colors.primaryLight,
+    backgroundColor: colors.primaryLight,
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 999,
@@ -1716,12 +1750,10 @@ const styles = StyleSheet.create({
 
   cardFooter: {
     flexDirection: 'row',
-    justifyContent:
-      'space-between',
+    justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor:
-      colors.border,
+    borderTopColor: colors.border,
     paddingTop: 11,
     marginTop: 8,
   },
@@ -1730,10 +1762,6 @@ const styles = StyleSheet.create({
     ...typography.button,
     color: colors.primary,
   },
-
-  // ===================================================
-  // MODAL
-  // ===================================================
 
   modalOverlay: {
     flex: 1,
@@ -1744,23 +1772,42 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
+  modalOverlayMobile: {
+    padding: 10,
+  },
+
   modalCard: {
     width: '100%',
     maxWidth: 650,
-    maxHeight: '92%',
-    backgroundColor:
-      colors.surface,
+    height: '90%',
+    maxHeight: 720,
+    backgroundColor: colors.surface,
     borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 22,
+    overflow: 'hidden',
+  },
+
+  modalCardMobile: {
+    width: '100%',
+    maxWidth: '100%',
+    height: '94%',
+    maxHeight: '94%',
+    padding: 14,
+    borderRadius: 14,
   },
 
   modalHeader: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
+    flexShrink: 0,
   },
 
   modalTitleArea: {
     flex: 1,
+    minWidth: 0,
     paddingRight: 12,
   },
 
@@ -1776,18 +1823,31 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
+  modalTitleMobile: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor:
-      colors.background,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
 
   modalScroll: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
     marginTop: 15,
+  },
+
+  modalScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 10,
   },
 
   modalDescription: {
@@ -1798,18 +1858,24 @@ const styles = StyleSheet.create({
   infoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent:
-      'space-between',
+    justifyContent: 'space-between',
     marginTop: 16,
+  },
+
+  infoGridMobile: {
+    flexDirection: 'column',
   },
 
   infoItem: {
     width: '48.5%',
-    backgroundColor:
-      colors.background,
+    backgroundColor: colors.background,
     borderRadius: 11,
     padding: 11,
     marginBottom: 8,
+  },
+
+  infoItemMobile: {
+    width: '100%',
   },
 
   infoLabel: {
@@ -1837,13 +1903,10 @@ const styles = StyleSheet.create({
     minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent:
-      'space-between',
-    backgroundColor:
-      colors.background,
+    justifyContent: 'space-between',
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor:
-      colors.border,
+    borderColor: colors.border,
     borderRadius: 11,
     paddingHorizontal: 12,
   },
@@ -1855,11 +1918,9 @@ const styles = StyleSheet.create({
   },
 
   selectOptions: {
-    backgroundColor:
-      colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor:
-      colors.border,
+    borderColor: colors.border,
     borderRadius: 11,
     marginTop: 5,
     overflow: 'hidden',
@@ -1869,13 +1930,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     borderBottomWidth: 1,
-    borderBottomColor:
-      colors.border,
+    borderBottomColor: colors.border,
   },
 
   selectOptionActive: {
-    backgroundColor:
-      colors.primaryLight,
+    backgroundColor: colors.primaryLight,
   },
 
   selectOptionText: {
@@ -1891,17 +1950,16 @@ const styles = StyleSheet.create({
 
   responseInput: {
     minHeight: 115,
-    backgroundColor:
-      colors.background,
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor:
-      colors.border,
+    borderColor: colors.border,
     borderRadius: 11,
     paddingHorizontal: 12,
     paddingVertical: 11,
     color: colors.text,
     ...typography.bodySmall,
-  },
+    outlineStyle: 'none',
+  } as any,
 
   characterCount: {
     ...typography.caption,
@@ -1911,8 +1969,19 @@ const styles = StyleSheet.create({
   },
 
   modalActions: {
+    width: '100%',
     flexDirection: 'row',
-    marginTop: 17,
+    alignItems: 'center',
+    flexShrink: 0,
+    paddingTop: 12,
+    marginTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+
+  modalActionsMobile: {
+    flexDirection: 'column-reverse',
+    alignItems: 'stretch',
   },
 
   deleteButton: {
@@ -1935,13 +2004,14 @@ const styles = StyleSheet.create({
 
   saveButton: {
     flex: 1,
+    minWidth: 0,
     height: 46,
     borderRadius: 11,
-    backgroundColor:
-      colors.primary,
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 12,
   },
 
   saveButtonText: {
@@ -1950,7 +2020,27 @@ const styles = StyleSheet.create({
     marginLeft: 7,
   },
 
+  modalButtonMobile: {
+    width: '100%',
+    flex: 0,
+    minWidth: 0,
+    marginRight: 0,
+    marginBottom: 8,
+  },
+
   buttonDisabled: {
     opacity: 0.6,
+  },
+
+  buttonPressed: {
+    opacity: 0.78,
+  },
+
+  cardPressed: {
+    opacity: 0.86,
+  },
+
+  optionPressed: {
+    opacity: 0.75,
   },
 });

@@ -7,10 +7,10 @@ import React, {
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import {
@@ -19,7 +19,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Clock3,
   Home,
   Info,
   PawPrint,
@@ -31,11 +30,8 @@ import {
 
 import { colors } from '../../../theme/theme';
 import WebMoradorSidebar from '../../../components/WebMoradorSidebar';
+import WebLayout from '../../../components/WebLayout';
 import { supabase } from '../../../services/supabase';
-
-// =====================================================
-// TIPOS
-// =====================================================
 
 type Categoria =
   | 'geral'
@@ -59,10 +55,6 @@ type Regra = {
 type Filtro =
   | 'todas'
   | Categoria;
-
-// =====================================================
-// CATEGORIA
-// =====================================================
 
 function categoriaTexto(
   categoria: Categoria
@@ -90,10 +82,6 @@ function categoriaTexto(
       return 'Outro';
   }
 }
-
-// =====================================================
-// ÍCONE DA CATEGORIA
-// =====================================================
 
 function CategoriaIcon({
   categoria,
@@ -161,11 +149,11 @@ function CategoriaIcon({
   }
 }
 
-// =====================================================
-// TELA
-// =====================================================
-
 export default function WebMoradorRegrasScreen() {
+  const { width } = useWindowDimensions();
+
+  const isMobile = width < 768;
+
   const [regras, setRegras] =
     useState<Regra[]>([]);
 
@@ -180,10 +168,6 @@ export default function WebMoradorRegrasScreen() {
 
   const [erro, setErro] =
     useState('');
-
-  // ===================================================
-  // CARREGAR REGRAS DO SUPABASE
-  // ===================================================
 
   useEffect(() => {
     carregarRegras();
@@ -243,10 +227,6 @@ export default function WebMoradorRegrasScreen() {
     }
   }
 
-  // ===================================================
-  // FILTRAR
-  // ===================================================
-
   const regrasFiltradas =
     useMemo(() => {
       if (filtro === 'todas') {
@@ -258,10 +238,6 @@ export default function WebMoradorRegrasScreen() {
           regra.categoria === filtro
       );
     }, [filtro, regras]);
-
-  // ===================================================
-  // CONTADORES
-  // ===================================================
 
   const categorias =
     useMemo(() => {
@@ -306,10 +282,6 @@ export default function WebMoradorRegrasScreen() {
       };
     }, [regras]);
 
-  // ===================================================
-  // ABRIR / FECHAR
-  // ===================================================
-
   function alternarRegra(
     id: string
   ) {
@@ -320,52 +292,72 @@ export default function WebMoradorRegrasScreen() {
         );
       }
 
-      return [...atual, id];
+      return [
+        ...atual,
+        id,
+      ];
     });
   }
 
-  // ===================================================
-  // RENDER
-  // ===================================================
-
   return (
-    <View style={styles.container}>
-      <WebMoradorSidebar active="regras" />
+    <WebLayout
+      sidebar={
+        <WebMoradorSidebar
+          active="regras"
+        />
+      }
+    >
+      <View style={styles.page}>
+        {/* CABEÇALHO */}
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={
-          styles.contentContainer
-        }
-        showsVerticalScrollIndicator={
-          false
-        }
-      >
-        {/* ============================================
-            CABEÇALHO
-        ============================================ */}
-
-        <View style={styles.header}>
-          <View>
+        <View
+          style={[
+            styles.header,
+            isMobile &&
+              styles.headerMobile,
+          ]}
+        >
+          <View
+            style={styles.headerText}
+          >
             <Text style={styles.title}>
               Regras do Condomínio
             </Text>
 
-            <Text style={styles.subtitle}>
+            <Text
+              style={styles.subtitle}
+            >
               Consulte as normas de convivência e utilização dos espaços.
             </Text>
           </View>
 
-          <View style={styles.headerActions}>
+          <View
+            style={[
+              styles.headerActions,
+              isMobile &&
+                styles.headerActionsMobile,
+            ]}
+          >
             <Pressable
-              style={styles.refreshButton}
+              style={[
+                styles.refreshButton,
+                isMobile &&
+                  styles.refreshButtonMobile,
+              ]}
               onPress={carregarRegras}
               disabled={carregando}
             >
-              <RefreshCw
-                size={17}
-                color={colors.primary}
-              />
+              {carregando ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.primary}
+                />
+              ) : (
+                <RefreshCw
+                  size={17}
+                  color={colors.primary}
+                />
+              )}
 
               <Text
                 style={styles.refreshText}
@@ -374,56 +366,75 @@ export default function WebMoradorRegrasScreen() {
               </Text>
             </Pressable>
 
-            <View style={styles.headerIcon}>
-              <BookOpen
-                size={24}
-                color={colors.primary}
-              />
-            </View>
+            {!isMobile && (
+              <View
+                style={styles.headerIcon}
+              >
+                <BookOpen
+                  size={24}
+                  color={colors.primary}
+                />
+              </View>
+            )}
           </View>
         </View>
 
-        {/* ============================================
-            AVISO
-        ============================================ */}
+        {/* AVISO */}
 
-        <View style={styles.notice}>
-          <View style={styles.noticeIcon}>
+        <View
+          style={[
+            styles.notice,
+            isMobile &&
+              styles.noticeMobile,
+          ]}
+        >
+          <View
+            style={styles.noticeIcon}
+          >
             <Info
               size={20}
               color={colors.primary}
             />
           </View>
 
-          <View style={styles.noticeContent}>
-            <Text style={styles.noticeTitle}>
+          <View
+            style={styles.noticeContent}
+          >
+            <Text
+              style={styles.noticeTitle}
+            >
               Importante
             </Text>
 
-            <Text style={styles.noticeText}>
-              As regras ajudam a manter uma convivência organizada e segura para todos.
-              Consulte esta área sempre que tiver dúvidas.
+            <Text
+              style={styles.noticeText}
+            >
+              As regras ajudam a manter uma convivência organizada e segura para todos. Consulte esta área sempre que tiver dúvidas.
             </Text>
           </View>
         </View>
 
-        {/* ============================================
-            ERRO
-        ============================================ */}
+        {/* ERRO */}
 
         {!!erro && (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>
+            <Text
+              style={styles.errorText}
+            >
               {erro}
             </Text>
           </View>
         )}
 
-        {/* ============================================
-            RESUMO
-        ============================================ */}
+        {/* RESUMO */}
 
-        <View style={styles.summary}>
+        <View
+          style={[
+            styles.summary,
+            isMobile &&
+              styles.summaryMobile,
+          ]}
+        >
           <SummaryCard
             icon={
               <BookOpen
@@ -433,6 +444,7 @@ export default function WebMoradorRegrasScreen() {
             }
             titulo="Total de regras"
             valor={regras.length}
+            mobile={isMobile}
           />
 
           <SummaryCard
@@ -443,7 +455,10 @@ export default function WebMoradorRegrasScreen() {
               />
             }
             titulo="Áreas comuns"
-            valor={categorias.areas_comuns}
+            valor={
+              categorias.areas_comuns
+            }
+            mobile={isMobile}
           />
 
           <SummaryCard
@@ -454,7 +469,10 @@ export default function WebMoradorRegrasScreen() {
               />
             }
             titulo="Segurança"
-            valor={categorias.seguranca}
+            valor={
+              categorias.seguranca
+            }
+            mobile={isMobile}
           />
 
           <SummaryCard
@@ -465,23 +483,31 @@ export default function WebMoradorRegrasScreen() {
               />
             }
             titulo="Silêncio"
-            valor={categorias.silencio}
+            valor={
+              categorias.silencio
+            }
+            mobile={isMobile}
+            ultimo
           />
         </View>
 
-        {/* ============================================
-            FILTROS
-        ============================================ */}
+        {/* FILTROS */}
 
-        <View style={styles.filtersBox}>
-          <Text style={styles.filtersTitle}>
+        <View
+          style={styles.filtersBox}
+        >
+          <Text
+            style={styles.filtersTitle}
+          >
             Categorias
           </Text>
 
           <View style={styles.filters}>
             <FilterButton
               titulo="Todas"
-              active={filtro === 'todas'}
+              active={
+                filtro === 'todas'
+              }
               onPress={() =>
                 setFiltro('todas')
               }
@@ -489,7 +515,9 @@ export default function WebMoradorRegrasScreen() {
 
             <FilterButton
               titulo="Geral"
-              active={filtro === 'geral'}
+              active={
+                filtro === 'geral'
+              }
               onPress={() =>
                 setFiltro('geral')
               }
@@ -497,7 +525,9 @@ export default function WebMoradorRegrasScreen() {
 
             <FilterButton
               titulo="Silêncio"
-              active={filtro === 'silencio'}
+              active={
+                filtro === 'silencio'
+              }
               onPress={() =>
                 setFiltro('silencio')
               }
@@ -506,16 +536,21 @@ export default function WebMoradorRegrasScreen() {
             <FilterButton
               titulo="Áreas comuns"
               active={
-                filtro === 'areas_comuns'
+                filtro ===
+                'areas_comuns'
               }
               onPress={() =>
-                setFiltro('areas_comuns')
+                setFiltro(
+                  'areas_comuns'
+                )
               }
             />
 
             <FilterButton
               titulo="Animais"
-              active={filtro === 'animais'}
+              active={
+                filtro === 'animais'
+              }
               onPress={() =>
                 setFiltro('animais')
               }
@@ -537,7 +572,8 @@ export default function WebMoradorRegrasScreen() {
             <FilterButton
               titulo="Segurança"
               active={
-                filtro === 'seguranca'
+                filtro ===
+                'seguranca'
               }
               onPress={() =>
                 setFiltro('seguranca')
@@ -546,7 +582,9 @@ export default function WebMoradorRegrasScreen() {
 
             <FilterButton
               titulo="Outro"
-              active={filtro === 'outro'}
+              active={
+                filtro === 'outro'
+              }
               onPress={() =>
                 setFiltro('outro')
               }
@@ -554,12 +592,20 @@ export default function WebMoradorRegrasScreen() {
           </View>
         </View>
 
-        {/* ============================================
-            TÍTULO DA LISTA
-        ============================================ */}
+        {/* CABEÇALHO DA LISTA */}
 
-        <View style={styles.sectionHeader}>
-          <View>
+        <View
+          style={[
+            styles.sectionHeader,
+            isMobile &&
+              styles.sectionHeaderMobile,
+          ]}
+        >
+          <View
+            style={
+              styles.sectionHeaderText
+            }
+          >
             <Text
               style={styles.sectionTitle}
             >
@@ -567,66 +613,80 @@ export default function WebMoradorRegrasScreen() {
             </Text>
 
             <Text
-              style={styles.sectionSubtitle}
+              style={
+                styles.sectionSubtitle
+              }
             >
               Clique em uma regra para visualizar todos os detalhes.
             </Text>
           </View>
 
-          <Text style={styles.resultCount}>
+          <Text
+            style={[
+              styles.resultCount,
+              isMobile &&
+                styles.resultCountMobile,
+            ]}
+          >
             {regrasFiltradas.length}{' '}
-            {regrasFiltradas.length === 1
+            {regrasFiltradas.length ===
+            1
               ? 'regra'
               : 'regras'}
           </Text>
         </View>
 
-        {/* ============================================
-            CARREGANDO
-        ============================================ */}
+        {/* CARREGANDO */}
 
         {carregando ? (
-          <View style={styles.loadingArea}>
+          <View
+            style={styles.loadingArea}
+          >
             <ActivityIndicator
               size="large"
               color={colors.primary}
             />
 
-            <Text style={styles.loadingText}>
+            <Text
+              style={styles.loadingText}
+            >
               Carregando regras...
             </Text>
           </View>
-        ) : regrasFiltradas.length === 0 ? (
-          /* ==========================================
-              VAZIO
-          ========================================== */
-
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}>
+        ) : regrasFiltradas.length ===
+          0 ? (
+          <View
+            style={styles.emptyCard}
+          >
+            <View
+              style={styles.emptyIcon}
+            >
               <BookOpen
                 size={27}
                 color={colors.primary}
               />
             </View>
 
-            <Text style={styles.emptyTitle}>
+            <Text
+              style={styles.emptyTitle}
+            >
               {filtro === 'todas'
                 ? 'Nenhuma regra publicada'
                 : 'Nenhuma regra nesta categoria'}
             </Text>
 
-            <Text style={styles.emptyText}>
+            <Text
+              style={styles.emptyText}
+            >
               {filtro === 'todas'
                 ? 'A administração ainda não publicou nenhuma regra para os moradores.'
                 : 'Não existem regras ativas nesta categoria no momento.'}
             </Text>
           </View>
         ) : (
-          /* ==========================================
-              REGRAS
-          ========================================== */
-
-          <View style={styles.rulesList}>
+          <View
+            style={styles.rulesList}
+          >
             {regrasFiltradas.map(
               (regra) => {
                 const aberta =
@@ -649,7 +709,11 @@ export default function WebMoradorRegrasScreen() {
                     }
                   >
                     <View
-                      style={styles.ruleTop}
+                      style={[
+                        styles.ruleTop,
+                        isMobile &&
+                          styles.ruleTopMobile,
+                      ]}
                     >
                       <View
                         style={
@@ -718,9 +782,11 @@ export default function WebMoradorRegrasScreen() {
 
                     {aberta && (
                       <View
-                        style={
-                          styles.ruleDescriptionBox
-                        }
+                        style={[
+                          styles.ruleDescriptionBox,
+                          isMobile &&
+                            styles.ruleDescriptionBoxMobile,
+                        ]}
                       >
                         <View
                           style={
@@ -738,7 +804,9 @@ export default function WebMoradorRegrasScreen() {
                             styles.ruleDescription
                           }
                         >
-                          {regra.descricao}
+                          {
+                            regra.descricao
+                          }
                         </Text>
                       </View>
                     )}
@@ -749,66 +817,88 @@ export default function WebMoradorRegrasScreen() {
           </View>
         )}
 
-        {/* ============================================
-            RODAPÉ
-        ============================================ */}
+        {/* RODAPÉ */}
 
-        <View style={styles.footerInfo}>
+        <View
+          style={[
+            styles.footerInfo,
+            isMobile &&
+              styles.footerInfoMobile,
+          ]}
+        >
           <Volume2
             size={18}
             color={colors.primary}
           />
 
-          <View style={styles.footerContent}>
-            <Text style={styles.footerTitle}>
+          <View
+            style={styles.footerContent}
+          >
+            <Text
+              style={styles.footerTitle}
+            >
               Ficou com alguma dúvida?
             </Text>
 
-            <Text style={styles.footerText}>
+            <Text
+              style={styles.footerText}
+            >
               Utilize o Chat com a Administração para solicitar esclarecimentos sobre as regras do condomínio.
             </Text>
           </View>
         </View>
-      </ScrollView>
-    </View>
+      </View>
+    </WebLayout>
   );
 }
-
-// =====================================================
-// RESUMO
-// =====================================================
 
 function SummaryCard({
   icon,
   titulo,
   valor,
+  mobile = false,
+  ultimo = false,
 }: {
   icon: React.ReactNode;
   titulo: string;
   valor: number;
+  mobile?: boolean;
+  ultimo?: boolean;
 }) {
   return (
-    <View style={styles.summaryCard}>
-      <View style={styles.summaryIcon}>
+    <View
+      style={[
+        styles.summaryCard,
+        mobile &&
+          styles.summaryCardMobile,
+        ultimo &&
+          styles.summaryCardLast,
+      ]}
+    >
+      <View
+        style={styles.summaryIcon}
+      >
         {icon}
       </View>
 
-      <View>
-        <Text style={styles.summaryLabel}>
+      <View
+        style={styles.summaryContent}
+      >
+        <Text
+          style={styles.summaryLabel}
+        >
           {titulo}
         </Text>
 
-        <Text style={styles.summaryValue}>
+        <Text
+          style={styles.summaryValue}
+        >
           {valor}
         </Text>
       </View>
     </View>
   );
 }
-
-// =====================================================
-// FILTRO
-// =====================================================
 
 function FilterButton({
   titulo,
@@ -841,41 +931,39 @@ function FilterButton({
   );
 }
 
-// =====================================================
-// ESTILOS
-// =====================================================
-
 const styles = StyleSheet.create({
-  container: {
+  page: {
     flex: 1,
-    flexDirection: 'row',
-    backgroundColor: colors.background,
-  },
-
-  content: {
-    flex: 1,
+    width: '100%',
     minWidth: 0,
   },
-
-  contentContainer: {
-    padding: 30,
-    paddingBottom: 60,
-  },
-
-  // ===================================================
-  // HEADER
-  // ===================================================
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     marginBottom: 22,
+  },
+
+  headerMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+
+  headerText: {
+    flex: 1,
+    minWidth: 0,
   },
 
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+
+  headerActionsMobile: {
+    width: '100%',
+    marginTop: 15,
   },
 
   title: {
@@ -885,8 +973,10 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 11,
+    lineHeight: 17,
     marginTop: 5,
   },
 
@@ -894,7 +984,8 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 13,
-    backgroundColor: colors.primaryLight,
+    backgroundColor:
+      colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -904,12 +995,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor:
+      colors.border,
+    backgroundColor:
+      colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+  },
+
+  refreshButtonMobile: {
+    width: '100%',
+    marginRight: 0,
   },
 
   refreshText: {
@@ -919,14 +1017,12 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 
-  // ===================================================
-  // AVISO
-  // ===================================================
-
   notice: {
-    backgroundColor: colors.surface,
+    backgroundColor:
+      colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor:
+      colors.border,
     borderRadius: 15,
     padding: 17,
     flexDirection: 'row',
@@ -934,18 +1030,26 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
+  noticeMobile: {
+    alignItems: 'flex-start',
+    padding: 14,
+  },
+
   noticeIcon: {
     width: 42,
     height: 42,
     borderRadius: 11,
-    backgroundColor: colors.primaryLight,
+    backgroundColor:
+      colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 13,
+    flexShrink: 0,
   },
 
   noticeContent: {
     flex: 1,
+    minWidth: 0,
   },
 
   noticeTitle: {
@@ -955,18 +1059,16 @@ const styles = StyleSheet.create({
   },
 
   noticeText: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 9,
     lineHeight: 15,
     marginTop: 4,
   },
 
-  // ===================================================
-  // ERRO
-  // ===================================================
-
   errorBox: {
-    backgroundColor: colors.dangerLight,
+    backgroundColor:
+      colors.dangerLight,
     borderRadius: 11,
     padding: 13,
     marginBottom: 18,
@@ -975,43 +1077,67 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.danger,
     fontSize: 9,
+    lineHeight: 15,
     fontWeight: '700',
   },
-
-  // ===================================================
-  // RESUMO
-  // ===================================================
 
   summary: {
     flexDirection: 'row',
     marginBottom: 20,
   },
 
+  summaryMobile: {
+    flexDirection: 'column',
+  },
+
   summaryCard: {
     flex: 1,
     minHeight: 92,
-    backgroundColor: colors.surface,
+    backgroundColor:
+      colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor:
+      colors.border,
     borderRadius: 14,
     padding: 15,
     marginRight: 10,
     flexDirection: 'row',
     alignItems: 'center',
+    minWidth: 0,
+  },
+
+  summaryCardMobile: {
+    width: '100%',
+    flex: 0,
+    minHeight: 82,
+    marginRight: 0,
+    marginBottom: 10,
+  },
+
+  summaryCardLast: {
+    marginRight: 0,
   },
 
   summaryIcon: {
     width: 42,
     height: 42,
     borderRadius: 11,
-    backgroundColor: colors.primaryLight,
+    backgroundColor:
+      colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 11,
+    flexShrink: 0,
+  },
+
+  summaryContent: {
+    flex: 1,
+    minWidth: 0,
   },
 
   summaryLabel: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 8,
     fontWeight: '700',
   },
@@ -1023,14 +1149,12 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
 
-  // ===================================================
-  // FILTROS
-  // ===================================================
-
   filtersBox: {
-    backgroundColor: colors.surface,
+    backgroundColor:
+      colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor:
+      colors.border,
     borderRadius: 14,
     padding: 15,
     marginBottom: 24,
@@ -1052,22 +1176,27 @@ const styles = StyleSheet.create({
     minHeight: 35,
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor:
+      colors.border,
+    backgroundColor:
+      colors.background,
     paddingHorizontal: 13,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 7,
-    marginBottom: 6,
+    marginBottom: 7,
   },
 
   filterButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
+    borderColor:
+      colors.primary,
+    backgroundColor:
+      colors.primaryLight,
   },
 
   filterText: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 8,
     fontWeight: '700',
   },
@@ -1077,15 +1206,22 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  // ===================================================
-  // SEÇÃO
-  // ===================================================
-
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     marginBottom: 14,
+  },
+
+  sectionHeaderMobile: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+
+  sectionHeaderText: {
+    flex: 1,
+    minWidth: 0,
   },
 
   sectionTitle: {
@@ -1095,20 +1231,25 @@ const styles = StyleSheet.create({
   },
 
   sectionSubtitle: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 9,
+    lineHeight: 15,
     marginTop: 4,
   },
 
   resultCount: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 8,
     fontWeight: '700',
+    marginLeft: 15,
   },
 
-  // ===================================================
-  // CARREGANDO / VAZIO
-  // ===================================================
+  resultCountMobile: {
+    marginLeft: 0,
+    marginTop: 8,
+  },
 
   loadingArea: {
     minHeight: 240,
@@ -1117,7 +1258,8 @@ const styles = StyleSheet.create({
   },
 
   loadingText: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 9,
     marginTop: 10,
   },
@@ -1125,9 +1267,11 @@ const styles = StyleSheet.create({
   emptyCard: {
     minHeight: 250,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor:
+      colors.border,
     borderRadius: 14,
-    backgroundColor: colors.surface,
+    backgroundColor:
+      colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 25,
@@ -1138,7 +1282,8 @@ const styles = StyleSheet.create({
     width: 55,
     height: 55,
     borderRadius: 15,
-    backgroundColor: colors.primaryLight,
+    backgroundColor:
+      colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 13,
@@ -1148,10 +1293,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     fontWeight: '800',
+    textAlign: 'center',
   },
 
   emptyText: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 9,
     lineHeight: 15,
     textAlign: 'center',
@@ -1159,25 +1306,26 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
-  // ===================================================
-  // REGRAS
-  // ===================================================
-
   rulesList: {
+    width: '100%',
     marginBottom: 20,
   },
 
   ruleCard: {
-    backgroundColor: colors.surface,
+    width: '100%',
+    backgroundColor:
+      colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor:
+      colors.border,
     borderRadius: 14,
     marginBottom: 10,
     overflow: 'hidden',
   },
 
   ruleCardOpen: {
-    borderColor: colors.primary,
+    borderColor:
+      colors.primary,
   },
 
   ruleTop: {
@@ -1187,23 +1335,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  ruleTopMobile: {
+    minHeight: 76,
+    padding: 13,
+  },
+
   ruleIcon: {
     width: 43,
     height: 43,
     borderRadius: 11,
-    backgroundColor: colors.primaryLight,
+    backgroundColor:
+      colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    flexShrink: 0,
   },
 
   ruleContent: {
     flex: 1,
+    minWidth: 0,
   },
 
   ruleTitle: {
     color: colors.text,
     fontSize: 10,
+    lineHeight: 16,
     fontWeight: '800',
   },
 
@@ -1212,7 +1369,8 @@ const styles = StyleSheet.create({
   },
 
   categoryText: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 8,
     fontWeight: '700',
   },
@@ -1222,43 +1380,57 @@ const styles = StyleSheet.create({
     height: 35,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+    marginLeft: 5,
   },
 
   ruleDescriptionBox: {
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
+    borderTopColor:
+      colors.border,
+    backgroundColor:
+      colors.background,
     padding: 15,
     flexDirection: 'row',
+  },
+
+  ruleDescriptionBoxMobile: {
+    padding: 13,
   },
 
   descriptionIcon: {
     width: 25,
     alignItems: 'flex-start',
     paddingTop: 1,
+    flexShrink: 0,
   },
 
   ruleDescription: {
     flex: 1,
-    color: colors.textSecondary,
+    minWidth: 0,
+    color:
+      colors.textSecondary,
     fontSize: 9,
     lineHeight: 16,
   },
 
-  // ===================================================
-  // RODAPÉ
-  // ===================================================
-
   footerInfo: {
-    backgroundColor: colors.primaryLight,
+    width: '100%',
+    backgroundColor:
+      colors.primaryLight,
     borderRadius: 14,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
 
+  footerInfoMobile: {
+    padding: 14,
+  },
+
   footerContent: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 11,
   },
 
@@ -1269,7 +1441,8 @@ const styles = StyleSheet.create({
   },
 
   footerText: {
-    color: colors.textSecondary,
+    color:
+      colors.textSecondary,
     fontSize: 9,
     lineHeight: 15,
     marginTop: 4,
