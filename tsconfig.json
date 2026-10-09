@@ -1,14 +1,15 @@
-
-{
+﻿{
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "noEmit": true
+    "noEmit": true,
+    "allowJs": false
   },
   "exclude": [
     "node_modules",
     "supabase/functions",
     "dist",
-    "web-build"
+    "web-build",
+    "trace-ts"
   ]
 }
